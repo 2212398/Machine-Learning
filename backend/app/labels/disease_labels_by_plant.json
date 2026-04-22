@@ -1,0 +1,17 @@
+{
+  "tomato": [
+    "tomato___healthy",
+    "tomato___early_blight",
+    "tomato___late_blight",
+    "tomato___leaf_mold"
+  ],
+  "potato": [
+    "potato___healthy",
+    "potato___early_blight",
+    "potato___late_blight"
+  ],
+  "pepper": [
+    "pepper___healthy",
+    "pepper___bacterial_spot"
+  ]
+}

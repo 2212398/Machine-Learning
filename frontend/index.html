@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phat hien la cay va benh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css?v=two-step-4" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <h1>Chan doan la cay bang AI</h1>
+        <p class="subtitle">
+          Buoc 1 xac dinh loai cay tu 1 anh. Buoc 2 nhan 1 hoac nhieu anh de chan doan benh va dua khuyen nghi.
+        </p>
+        <div class="top-actions">
+          <button id="resetAllBtn" class="secondary-btn" type="button">Reset toan bo</button>
+        </div>
+
+        <section class="workflow-block">
+          <h2>Buoc 1: Nhan dien loai cay (1 anh)</h2>
+          <label class="upload-label" for="step1ImageInput">Chon 1 anh la cay (JPG/PNG)</label>
+          <input id="step1ImageInput" type="file" accept="image/*" />
+
+          <div class="preview-wrap">
+            <img id="step1PreviewImage" alt="Xem truoc anh buoc 1" />
+            <p id="step1EmptyPreview">Chua co anh buoc 1.</p>
+          </div>
+
+          <button id="step1DetectBtn" disabled>Chay Buoc 1</button>
+          <div id="step1Loading" class="loading hidden">Dang nhan dien loai cay...</div>
+
+          <section id="step1Result" class="result hidden" aria-live="polite">
+            <h3>Ket qua Buoc 1</h3>
+            <p><strong>Trang thai:</strong> <span id="step1Status">-</span></p>
+            <p><strong>Loai cay de xuat:</strong> <span id="step1PlantLabel">-</span></p>
+            <p><strong>Do tin cay:</strong> <span id="step1PlantConfidence">-</span></p>
+            <p><strong>Lech top1-top2:</strong> <span id="step1Margin">-</span></p>
+            <p><strong>So vung la phat hien:</strong> <span id="step1LeafCount">-</span></p>
+            <p><strong>Can xac nhan thu cong:</strong> <span id="step1NeedConfirm">-</span></p>
+            <p class="note" id="step1Message"></p>
+
+            <section id="step1ConfirmSection" class="confirm-section hidden">
+              <label for="step1CandidateSelect">Chon loai cay da xac nhan:</label>
+              <select id="step1CandidateSelect"></select>
+              <button id="step1ConfirmBtn" type="button">Xac nhan cay</button>
+            </section>
+            <p class="note" id="step1ConfirmedNote">Chua xac nhan loai cay.</p>
+          </section>
+        </section>
+
+        <section class="workflow-block">
+          <h2>Buoc 2: Nhan dien benh (1 hoac nhieu anh)</h2>
+          <p class="subtitle-inline">
+            Loai cay da xac nhan tu Buoc 1: <strong id="selectedPlantLabel">Chua xac nhan</strong>
+          </p>
+
+          <label class="upload-label" for="step2ImageInput">Chon 1 hoac nhieu anh benh (JPG/PNG)</label>
+          <input id="step2ImageInput" type="file" accept="image/*" multiple />
+          <p class="note" id="step2FileSummary">Chua chon anh buoc 2.</p>
+
+          <section id="step2PreviewSection" class="preview-grid-wrap hidden">
+            <h3>Xem truoc anh Buoc 2</h3>
+            <div id="step2PreviewGrid" class="preview-grid"></div>
+          </section>
+
+          <button id="step2DetectBtn" disabled>Chay Buoc 2</button>
+          <div id="step2Loading" class="loading hidden">Dang chan doan benh tren tap anh...</div>
+
+          <section id="step2Result" class="result hidden" aria-live="polite">
+            <h3>Ket qua Buoc 2</h3>
+            <p><strong>Trang thai:</strong> <span id="step2Status">-</span></p>
+            <p><strong>So anh gui:</strong> <span id="step2ImageCount">-</span></p>
+            <p><strong>Anh hop le:</strong> <span id="step2SuccessCount">-</span></p>
+            <p><strong>Anh loi:</strong> <span id="step2FailCount">-</span></p>
+            <p><strong>So lop benh hop le:</strong> <span id="step2AllowedClassCount">-</span></p>
+            <p><strong>Chan doan cuoi:</strong> <span id="step2FinalDisease">-</span></p>
+            <p><strong>Do tin cay cuoi:</strong> <span id="step2FinalConfidence">-</span></p>
+            <p><strong>Khuyen nghi:</strong> <span id="step2Recommendation">-</span></p>
+            <p class="note" id="step2Message"></p>
+
+            <h4>Chi tiet tung anh</h4>
+            <ul id="step2PerImageList" class="per-image-list"></ul>
+          </section>
+        </section>
+
+        <p id="error" class="error hidden"></p>
+      </section>
+    </main>
+
+    <script src="/static/app.js?v=two-step-4"></script>
+  </body>
+</html>
