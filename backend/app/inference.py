@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
@@ -11,6 +12,10 @@ from torchvision import models
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
 class PlantDiseasePredictor:
@@ -225,9 +230,15 @@ class PlantDiseasePredictor:
         return merged
 
     def _prepare_tensor(self, image: np.ndarray) -> torch.Tensor:
-        resized = cv2.resize(image, (224, 224))
+        height, width = image.shape[:2]
+        if width > 224 or height > 224:
+            interp = cv2.INTER_AREA
+        else:
+            interp = cv2.INTER_LINEAR
+        resized = cv2.resize(image, (224, 224), interpolation=interp)
         rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
         arr = rgb.astype(np.float32) / 255.0
+        arr = (arr - IMAGENET_MEAN) / IMAGENET_STD
         tensor = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0)
         return tensor.to(self.device)
 
@@ -306,9 +317,22 @@ class PlantDiseasePredictor:
             )
         return candidates
 
-    def predict_plant(self, image: np.ndarray) -> dict:
+    def inspect_plant(self, image: np.ndarray, top_k: int = 3) -> dict[str, Any]:
+        """Run the plant model and return raw top-1 label/confidence.
+
+        Unlike `predict_plant`, this method does NOT apply `plant_threshold` to mask the
+        label into `unknown_plant`. This is useful for Step2 verification to avoid false
+        rejects on hard/blurred/diseased images.
+        """
+
         if self.plant_model is None:
-            return self._missing_step1()
+            return {
+                "can_run": False,
+                "top1_label": "unknown_plant",
+                "top1_confidence": 0.0,
+                "top1_top2_margin": 0.0,
+                "top_candidates": [],
+            }
 
         tensor = self._prepare_tensor(image)
 
@@ -323,24 +347,52 @@ class PlantDiseasePredictor:
             raise ValueError("Plant logits must be 1D or 2D tensor")
 
         plant_probs = self._softmax_numpy(plant_logits_np.astype(np.float32))
-        plant_idx = int(np.argmax(plant_probs))
-        plant_conf = float(plant_probs[plant_idx])
-        top_candidates = self._build_top_candidates(plant_probs, top_k=3)
+        if plant_probs.size == 0:
+            return {
+                "can_run": True,
+                "top1_label": "unknown_plant",
+                "top1_confidence": 0.0,
+                "top1_top2_margin": 0.0,
+                "top_candidates": [],
+            }
 
-        top1_conf = float(top_candidates[0]["confidence"]) if top_candidates else plant_conf
-        top2_conf = float(top_candidates[1]["confidence"]) if len(top_candidates) > 1 else 0.0
+        top_indices = np.argsort(-plant_probs)
+        top1_idx = int(top_indices[0])
+        top1_conf = float(plant_probs[top1_idx])
+        top2_conf = float(plant_probs[int(top_indices[1])]) if len(top_indices) > 1 else 0.0
         top1_top2_margin = max(0.0, top1_conf - top2_conf)
+
+        if 0 <= top1_idx < len(self.plant_labels):
+            top1_label = self.plant_labels[top1_idx]
+        else:
+            top1_label = "unknown_plant"
+
+        top_candidates = self._build_top_candidates(plant_probs, top_k=int(top_k))
+
+        return {
+            "can_run": True,
+            "top1_label": top1_label,
+            "top1_confidence": float(top1_conf),
+            "top1_top2_margin": float(top1_top2_margin),
+            "top_candidates": top_candidates,
+        }
+
+    def predict_plant(self, image: np.ndarray) -> dict:
+        if self.plant_model is None:
+            return self._missing_step1()
+
+        inspected = self.inspect_plant(image=image, top_k=3)
+        top_candidates = inspected.get("top_candidates", [])
+        top1_label = str(inspected.get("top1_label", "unknown_plant"))
+        top1_conf = float(inspected.get("top1_confidence", 0.0))
+        top1_top2_margin = float(inspected.get("top1_top2_margin", 0.0))
 
         low_confidence = top1_conf < self.plant_gate_confidence
         close_margin = top1_top2_margin < self.plant_gate_margin
         requires_confirmation = low_confidence or close_margin
 
-        if plant_idx >= len(self.plant_labels):
-            plant_label = "unknown_plant"
-        else:
-            plant_label = self.plant_labels[plant_idx]
-
-        if plant_conf < self.plant_threshold:
+        plant_label = top1_label
+        if top1_conf < self.plant_threshold:
             plant_label = "unknown_plant"
             requires_confirmation = True
 
@@ -349,13 +401,62 @@ class PlantDiseasePredictor:
         return {
             "step1_done": True,
             "plant_label": plant_label,
-            "plant_confidence": round(plant_conf, 4),
+            "plant_confidence": round(top1_conf, 4),
             "top1_top2_margin": round(float(top1_top2_margin), 4),
             "requires_confirmation": requires_confirmation,
             "auto_confirmed": auto_confirmed,
             "top_candidates": top_candidates,
             "model_loaded": self.model_loaded,
             "inference_mode": "two_step",
+        }
+
+    def validate_step2_plant_match(self, image: np.ndarray, confirmed_plant_label: str) -> dict[str, float | str | bool]:
+        resolved_confirmed = self.resolve_plant_label(confirmed_plant_label)
+        if resolved_confirmed is None:
+            return {
+                "can_verify": False,
+                "confirmed_plant_label": "unknown_plant",
+                "detected_plant_label": "unknown_plant",
+                "detected_plant_confidence": 0.0,
+                "detected_top1_top2_margin": 0.0,
+                "requires_confirmation": True,
+                "confident_detection": False,
+                "mismatch": False,
+            }
+
+        if self.plant_model is None:
+            return {
+                "can_verify": False,
+                "confirmed_plant_label": resolved_confirmed,
+                "detected_plant_label": "unknown_plant",
+                "detected_plant_confidence": 0.0,
+                "detected_top1_top2_margin": 0.0,
+                "requires_confirmation": True,
+                "confident_detection": False,
+                "mismatch": False,
+            }
+
+        inspected = self.inspect_plant(image=image, top_k=3)
+        detected_plant = str(inspected.get("top1_label", "unknown_plant"))
+        detected_conf = float(inspected.get("top1_confidence", 0.0))
+        detected_margin = float(inspected.get("top1_top2_margin", 0.0))
+
+        low_confidence = detected_conf < self.plant_gate_confidence
+        close_margin = detected_margin < self.plant_gate_margin
+        requires_confirmation = low_confidence or close_margin
+
+        confident_detection = detected_plant != "unknown_plant" and not requires_confirmation
+        mismatch = confident_detection and detected_plant != resolved_confirmed
+
+        return {
+            "can_verify": True,
+            "confirmed_plant_label": resolved_confirmed,
+            "detected_plant_label": detected_plant,
+            "detected_plant_confidence": round(detected_conf, 4),
+            "detected_top1_top2_margin": round(detected_margin, 4),
+            "requires_confirmation": requires_confirmation,
+            "confident_detection": confident_detection,
+            "mismatch": mismatch,
         }
 
     def predict_disease_for_plant(self, image: np.ndarray, plant_label: str) -> dict:

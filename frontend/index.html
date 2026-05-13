@@ -3,89 +3,119 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Phat hien la cay va benh</title>
+    <title>Phát hiện lá cây và bệnh</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css?v=two-step-4" />
+    <link rel="stylesheet" href="/static/styles.css?v=two-step-5" />
   </head>
   <body>
     <main class="page">
       <section class="card">
-        <h1>Chan doan la cay bang AI</h1>
+        <h1>Chẩn đoán lá cây bằng AI</h1>
         <p class="subtitle">
-          Buoc 1 xac dinh loai cay tu 1 anh. Buoc 2 nhan 1 hoac nhieu anh de chan doan benh va dua khuyen nghi.
+          Bước 1 xác định loại cây từ 1 ảnh. Bước 2 nhận 1 hoặc nhiều ảnh để chẩn đoán bệnh và đưa khuyến nghị.
         </p>
         <div class="top-actions">
-          <button id="resetAllBtn" class="secondary-btn" type="button">Reset toan bo</button>
+          <button id="resetAllBtn" class="secondary-btn" type="button">Reset toàn bộ</button>
         </div>
 
         <section class="workflow-block">
-          <h2>Buoc 1: Nhan dien loai cay (1 anh)</h2>
-          <label class="upload-label" for="step1ImageInput">Chon 1 anh la cay (JPG/PNG)</label>
+          <h2>Bước 1: Nhận diện loại cây (1 ảnh)</h2>
+          <label class="upload-label" for="step1ImageInput">Chọn 1 ảnh lá cây (JPG/PNG)</label>
           <input id="step1ImageInput" type="file" accept="image/*" />
 
           <div class="preview-wrap">
-            <img id="step1PreviewImage" alt="Xem truoc anh buoc 1" />
-            <p id="step1EmptyPreview">Chua co anh buoc 1.</p>
+            <img id="step1PreviewImage" alt="Xem trước ảnh bước 1" />
+            <p id="step1EmptyPreview">Chưa có ảnh bước 1.</p>
           </div>
 
-          <button id="step1DetectBtn" disabled>Chay Buoc 1</button>
-          <div id="step1Loading" class="loading hidden">Dang nhan dien loai cay...</div>
+          <button id="step1DetectBtn" disabled>Chạy Bước 1</button>
+          <div id="step1Loading" class="loading hidden">Đang nhận diện loại cây...</div>
 
           <section id="step1Result" class="result hidden" aria-live="polite">
-            <h3>Ket qua Buoc 1</h3>
-            <p><strong>Trang thai:</strong> <span id="step1Status">-</span></p>
-            <p><strong>Loai cay de xuat:</strong> <span id="step1PlantLabel">-</span></p>
-            <p><strong>Do tin cay:</strong> <span id="step1PlantConfidence">-</span></p>
-            <p><strong>Lech top1-top2:</strong> <span id="step1Margin">-</span></p>
-            <p><strong>So vung la phat hien:</strong> <span id="step1LeafCount">-</span></p>
-            <p><strong>Can xac nhan thu cong:</strong> <span id="step1NeedConfirm">-</span></p>
+            <h3>Kết quả Bước 1</h3>
+            <p><strong>Trạng thái:</strong> <span id="step1Status">-</span></p>
+            <p><strong>Loại cây nhận diện:</strong> <span id="step1PlantLabel">-</span></p>
+            <p><strong>Độ tin cậy:</strong> <span id="step1PlantConfidence">-</span></p>
+            <p><strong>Mức chênh top1-top2:</strong> <span id="step1Margin">-</span></p>
+            <p><strong>Số vùng lá phát hiện:</strong> <span id="step1LeafCount">-</span></p>
+            <p><strong>Cần xác nhận thêm:</strong> <span id="step1NeedConfirm">-</span></p>
             <p class="note" id="step1Message"></p>
 
-            <section id="step1ConfirmSection" class="confirm-section hidden">
-              <label for="step1CandidateSelect">Chon loai cay da xac nhan:</label>
-              <select id="step1CandidateSelect"></select>
-              <button id="step1ConfirmBtn" type="button">Xac nhan cay</button>
+            <section id="step1RetakeTips" class="checklist-card hidden" aria-label="Gợi ý chụp lại">
+              <h4>Gợi ý chụp lại</h4>
+              <ul id="step1RetakeList" class="checklist-list"></ul>
+              <p class="note" id="step1RetakeExample"></p>
             </section>
-            <p class="note" id="step1ConfirmedNote">Chua xac nhan loai cay.</p>
+
+            <section id="step1ConfirmSection" class="confirm-section hidden">
+              <label for="step1CandidateSelect">Chọn loại cây để xác nhận:</label>
+              <select id="step1CandidateSelect"></select>
+              <button id="step1ConfirmBtn" type="button">Xác nhận cây</button>
+            </section>
+            <p class="note" id="step1ConfirmedNote">Trạng thái xác nhận: Chưa xác nhận.</p>
           </section>
         </section>
 
         <section class="workflow-block">
-          <h2>Buoc 2: Nhan dien benh (1 hoac nhieu anh)</h2>
+          <h2>Bước 2: Nhận diện bệnh (1 hoặc nhiều ảnh)</h2>
           <p class="subtitle-inline">
-            Loai cay da xac nhan tu Buoc 1: <strong id="selectedPlantLabel">Chua xac nhan</strong>
+            Loại cây đã xác nhận từ Bước 1: <strong id="selectedPlantLabel">Chưa xác nhận</strong>
           </p>
 
-          <label class="upload-label" for="step2ImageInput">Chon 1 hoac nhieu anh benh (JPG/PNG)</label>
+          <label class="upload-label" for="step2ImageInput">Chọn 1 hoặc nhiều ảnh bệnh (JPG/PNG)</label>
           <input id="step2ImageInput" type="file" accept="image/*" multiple />
-          <p class="note" id="step2FileSummary">Chua chon anh buoc 2.</p>
+          <p class="note" id="step2FileSummary">Chưa chọn ảnh bước 2.</p>
 
           <section id="step2PreviewSection" class="preview-grid-wrap hidden">
-            <h3>Xem truoc anh Buoc 2</h3>
+            <h3>Xem trước ảnh Bước 2</h3>
             <div id="step2PreviewGrid" class="preview-grid"></div>
           </section>
 
-          <button id="step2DetectBtn" disabled>Chay Buoc 2</button>
-          <div id="step2Loading" class="loading hidden">Dang chan doan benh tren tap anh...</div>
+          <button id="step2DetectBtn" disabled>Chạy Bước 2</button>
+          <div id="step2Loading" class="loading hidden">Đang chẩn đoán bệnh trên tập ảnh...</div>
 
           <section id="step2Result" class="result hidden" aria-live="polite">
-            <h3>Ket qua Buoc 2</h3>
-            <p><strong>Trang thai:</strong> <span id="step2Status">-</span></p>
-            <p><strong>So anh gui:</strong> <span id="step2ImageCount">-</span></p>
-            <p><strong>Anh hop le:</strong> <span id="step2SuccessCount">-</span></p>
-            <p><strong>Anh loi:</strong> <span id="step2FailCount">-</span></p>
-            <p><strong>So lop benh hop le:</strong> <span id="step2AllowedClassCount">-</span></p>
-            <p><strong>Chan doan cuoi:</strong> <span id="step2FinalDisease">-</span></p>
-            <p><strong>Do tin cay cuoi:</strong> <span id="step2FinalConfidence">-</span></p>
-            <p><strong>Khuyen nghi:</strong> <span id="step2Recommendation">-</span></p>
+            <h3>Kết quả Bước 2</h3>
+            <p><strong>Trạng thái:</strong> <span id="step2Status">-</span></p>
+            <p><strong>Số ảnh gửi:</strong> <span id="step2ImageCount">-</span></p>
+            <p><strong>Ảnh hợp lệ:</strong> <span id="step2SuccessCount">-</span></p>
+            <p><strong>Ảnh lỗi:</strong> <span id="step2FailCount">-</span></p>
+            <p><strong>Ảnh lệch loại cây:</strong> <span id="step2MismatchCount">-</span></p>
+            <p><strong>Số lớp bệnh hợp lệ:</strong> <span id="step2AllowedClassCount">-</span></p>
+            <p><strong>Chẩn đoán cuối:</strong> <span id="step2FinalDisease">-</span></p>
+            <p><strong>Độ tin cậy cuối:</strong> <span id="step2FinalConfidence">-</span></p>
+            <p><strong>Khuyến nghị:</strong> <span id="step2Recommendation">-</span></p>
+
+            <section id="step2RetakeTips" class="checklist-card hidden" aria-label="Gợi ý chụp lại">
+              <h4>Gợi ý chụp lại</h4>
+              <ul id="step2RetakeList" class="checklist-list"></ul>
+              <p class="note" id="step2RetakeExample"></p>
+            </section>
+
+            <section id="step2Checklist" class="checklist-grid hidden" aria-label="Checklist xử lý">
+              <div class="checklist-card">
+                <h4>Việc cần làm ngay</h4>
+                <ul id="step2ChecklistImmediate" class="checklist-list"></ul>
+              </div>
+
+              <div class="checklist-card">
+                <h4>Theo dõi</h4>
+                <ul id="step2ChecklistMonitor" class="checklist-list"></ul>
+              </div>
+
+              <div class="checklist-card">
+                <h4>Khi nào nên hỏi kỹ thuật viên địa phương</h4>
+                <ul id="step2ChecklistConsult" class="checklist-list"></ul>
+              </div>
+            </section>
             <p class="note" id="step2Message"></p>
 
-            <h4>Chi tiet tung anh</h4>
+            <h4>Chi tiết từng ảnh</h4>
             <ul id="step2PerImageList" class="per-image-list"></ul>
           </section>
         </section>
@@ -94,6 +124,6 @@
       </section>
     </main>
 
-    <script src="/static/app.js?v=two-step-4"></script>
+    <script src="/static/app.js?v=two-step-11"></script>
   </body>
 </html>

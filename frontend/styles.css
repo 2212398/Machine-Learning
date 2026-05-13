@@ -219,6 +219,35 @@ button:disabled {
   padding: 14px;
 }
 
+.checklist-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.checklist-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f7fcf8;
+  padding: 10px 12px;
+}
+
+.checklist-card h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.checklist-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #2a3a31;
+}
+
+.checklist-list li {
+  margin: 6px 0;
+}
+
 .result h3,
 .result h4 {
   margin: 0 0 8px;

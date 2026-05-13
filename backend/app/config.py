@@ -11,6 +11,25 @@ def _to_bool(raw: str, default: bool = False) -> bool:
     return default
 
 
+def _to_int(raw: str, default: int, min_value: int | None = None) -> int:
+    try:
+        value = int(str(raw).strip())
+    except Exception:
+        value = int(default)
+
+    if min_value is not None:
+        value = max(int(min_value), value)
+    return value
+
+
+def _to_csv_list(raw: str) -> list[str]:
+    text = (raw or "").strip()
+    if not text:
+        return []
+    items = [part.strip() for part in text.split(",")]
+    return [item for item in items if item]
+
+
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR.parent.parent
 
@@ -44,3 +63,32 @@ STEP2_MAX_TOTAL_BYTES = max(
 
 FRONTEND_DIR = PROJECT_DIR / "frontend"
 INDEX_FILE = FRONTEND_DIR / "index.html"
+
+# --- Security / Hardening knobs ---
+
+# CORS
+ALLOWED_ORIGINS = _to_csv_list(os.getenv("ALLOWED_ORIGINS", ""))
+ALLOWED_ORIGIN_REGEX = os.getenv(
+    "ALLOWED_ORIGIN_REGEX",
+    r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+).strip() or None
+
+# Flow policy
+ENABLE_LEGACY_PREDICT_ENDPOINT = _to_bool(os.getenv("ENABLE_LEGACY_PREDICT_ENDPOINT", "0"), default=False)
+REQUIRE_STEP2_FLOW_TOKEN = _to_bool(os.getenv("REQUIRE_STEP2_FLOW_TOKEN", "1"), default=True)
+STEP2_FLOW_TOKEN_SECRET = os.getenv("STEP2_FLOW_TOKEN_SECRET", "").strip()
+STEP2_FLOW_TOKEN_TTL_SEC = _to_int(os.getenv("STEP2_FLOW_TOKEN_TTL_SEC", "900"), 900, min_value=60)
+STEP2_FLOW_TOKEN_BIND_IP = _to_bool(os.getenv("STEP2_FLOW_TOKEN_BIND_IP", "0"), default=False)
+
+# Runtime protection
+INFERENCE_MAX_CONCURRENCY = _to_int(os.getenv("INFERENCE_MAX_CONCURRENCY", "2"), 2, min_value=1)
+RATE_LIMIT_WINDOW_SEC = _to_int(os.getenv("RATE_LIMIT_WINDOW_SEC", "60"), 60, min_value=1)
+RATE_LIMIT_MAX_REQUESTS = _to_int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60"), 60, min_value=1)
+
+# Image decode guards (helps against oversized images / decompression bombs)
+MAX_IMAGE_WIDTH = _to_int(os.getenv("MAX_IMAGE_WIDTH", "6000"), 6000, min_value=64)
+MAX_IMAGE_HEIGHT = _to_int(os.getenv("MAX_IMAGE_HEIGHT", "6000"), 6000, min_value=64)
+MAX_IMAGE_PIXELS = _to_int(os.getenv("MAX_IMAGE_PIXELS", str(25_000_000)), 25_000_000, min_value=64 * 64)
+
+# Step2 additional safety
+STEP2_STRICT_PLANT_MATCH = _to_bool(os.getenv("STEP2_STRICT_PLANT_MATCH", "1"), default=True)

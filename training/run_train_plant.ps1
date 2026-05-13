@@ -1,10 +1,10 @@
 param(
     [string]$ProjectRoot = (Resolve-Path "$PSScriptRoot\..\..").Path,
-    [int]$Epochs = 10,
-    [int]$BatchSize = 16,
+    [int]$Epochs = 30,
+    [int]$BatchSize = 48,
     [string]$Backbone = "large",
     [int]$LogInterval = 25,
-    [int]$NumWorkers = 0
+    [int]$NumWorkers = 4
 )
 
 $trainDir = Join-Path $ProjectRoot "PlantDisease\prepared_template_style_plant_split\train"
