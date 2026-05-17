@@ -41,8 +41,8 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
   useEffect(() => {
     const fetchRecommendation = async () => {
       try {
-        const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || "";
-        const base = FASTAPI_URL || window.location.origin;
+        const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || "http://localhost:8000";
+        const base = FASTAPI_URL;
         const url = `${base}/api/recommendation?disease_label=${encodeURIComponent(
           result.disease_label
         )}&plant_label=${encodeURIComponent(result.plant_label)}`;
