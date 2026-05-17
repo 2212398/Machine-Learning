@@ -168,6 +168,22 @@ def health():
     }
 
 
+@app.get("/api/recommendation")
+def get_recommendation(disease_label: str, plant_label: str):
+    """Return a short recommendation summary and checklist for a diagnosis.
+
+    Query params:
+    - disease_label: disease label (e.g. Tomato___Early_blight)
+    - plant_label: plant label (e.g. Tomato)
+    """
+    try:
+        summary = recommender.get(disease_label=disease_label, plant_label=plant_label)
+        checklist = recommender.get_checklist(disease_label=disease_label, plant_label=plant_label)
+        return {"summary": summary, "checklist": checklist}
+    except Exception:
+        raise HTTPException(status_code=500, detail="Không thể lấy khuyến nghị lúc này.")
+
+
 def _client_ip_from_request(request: Request) -> str:
     xff = request.headers.get("x-forwarded-for")
     if xff:

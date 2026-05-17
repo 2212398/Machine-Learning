@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { recordFeedback } from "@/lib/actions/feedback";
@@ -14,6 +14,12 @@ interface DiagnosisResultProps {
 export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [checklist, setChecklist] = useState<{
+    immediate: string[];
+    monitor: string[];
+    consult: string[];
+  } | null>(null);
 
   const plantConfidencePercent = Math.round(result.plant_confidence * 100);
   const diseaseConfidencePercent = Math.round(
@@ -31,6 +37,25 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
       alert(response.error || "Lỗi khi lưu phản hồi");
     }
   };
+
+  useEffect(() => {
+    const fetchRecommendation = async () => {
+      try {
+        const url = `/api/recommendation?disease_label=${encodeURIComponent(
+          result.disease_label
+        )}&plant_label=${encodeURIComponent(result.plant_label)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        setRecommendation(data.summary || null);
+        setChecklist(data.checklist || null);
+      } catch (e) {
+        // ignore failures, recommendations are optional
+      }
+    };
+
+    fetchRecommendation();
+  }, [result.disease_label, result.plant_label]);
 
   return (
     <Card className="p-8">
@@ -110,12 +135,45 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
           </div>
         </div>
 
-        {/* Recommendation section (placeholder for Phase 3) */}
+        {/* Recommendation section (Phase 3) */}
         <div className="p-4 border border-brand-200 bg-brand-50 rounded-xl">
           <p className="text-sm text-brand-700">
-            💡 <strong>Khuyến nghị (Phase 3):</strong> Các hướng dẫn chăm sóc và
-            phòng trừ bệnh sẽ được bổ sung trong giai đoạn tiếp theo.
+            💡 <strong>Khuyến nghị:</strong>
           </p>
+          {recommendation ? (
+            <p className="mt-2 text-sm text-brand-800">{recommendation}</p>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">Đang tải khuyến nghị…</p>
+          )}
+
+          {checklist ? (
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-surface-dark">
+              <div>
+                <h4 className="font-semibold">Hành động ngay</h4>
+                <ul className="list-disc pl-5 mt-1">
+                  {checklist.immediate.map((it, i) => (
+                    <li key={i}>{it}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold">Theo dõi</h4>
+                <ul className="list-disc pl-5 mt-1">
+                  {checklist.monitor.map((it, i) => (
+                    <li key={i}>{it}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold">Khi cần tư vấn</h4>
+                <ul className="list-disc pl-5 mt-1">
+                  {checklist.consult.map((it, i) => (
+                    <li key={i}>{it}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Actions */}
