@@ -16,8 +16,9 @@ This project is a local web app for plant leaf analysis with a two-stage logic:
   - Disease inference model
 - Image processing: OpenCV (read, resize, threshold + contour leaf extraction)
 - Backend: FastAPI
-- Frontend: HTML + CSS + JavaScript (Vietnamese UI)
-- Runtime: local only, supports CPU and GPU
+- Frontend migration target: Next.js App Router + Tailwind CSS
+- Backend/BaaS target: Supabase Auth, Database, Storage and RLS
+- Runtime: local now, VPS deployment later with Docker and SSL
 
 ## Folder Structure
 
@@ -35,9 +36,15 @@ code/
       config.py
     requirements.txt
   frontend/
-    index.html
-    styles.css
-    app.js
+    legacy static frontend kept for reference during migration
+  frontend-next/
+    app/
+    components/
+    features/
+    lib/
+    types/
+  supabase/
+    migrations/
   training/
     train_plant_mobilenetv3.py
     train_disease_mobilenetv3.py
@@ -59,13 +66,25 @@ backend/app/models/plant_mobilenetv3.pt
 backend/app/models/disease_mobilenetv3.pt
 ```
 
-4. Run API + frontend server:
+4. Apply the Supabase migration in `code/supabase/migrations/001_phase1_init.sql`.
+
+5. Copy `code/frontend-next/.env.example` to `.env.local` and fill Supabase values.
+
+6. Install frontend dependencies and run the Next.js app:
+
+```powershell
+cd code/frontend-next
+npm install
+npm run dev
+```
+
+7. Run API + frontend server for the legacy stack if you still need the old static UI:
 
 ```powershell
 py -m uvicorn backend.app.main:app --app-dir code --host 127.0.0.1 --port 8000
 ```
 
-5. Open:
+8. Open:
 
 ```text
 http://127.0.0.1:8000
