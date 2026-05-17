@@ -10,6 +10,8 @@ import re
 import shutil
 import threading
 import time
+import urllib.parse
+import urllib.request
 from collections import defaultdict, deque
 from datetime import datetime
 from pathlib import Path
@@ -48,6 +50,7 @@ from .config import (
     RATE_LIMIT_MAX_REQUESTS,
     RATE_LIMIT_WINDOW_SEC,
     RECOMMENDATION_PATH,
+    PROJECT_DIR,
     REQUIRE_STEP2_FLOW_TOKEN,
     STEP2_MAX_FILES,
     STEP2_MAX_TOTAL_BYTES,
@@ -96,9 +99,7 @@ app = FastAPI(title="Plant Leaf Detection API", version="2.0.0")
 
 
 # Background feedback aggregation (periodically export feedbacks for retraining)
-import threading
 import time as _time
-import requests
 
 
 def _start_feedback_aggregator(interval_sec: int = 60 * 60):
@@ -124,34 +125,50 @@ def _start_feedback_aggregator(interval_sec: int = 60 * 60):
         while True:
             try:
                 params = {
-                    "select": "*,diagnosis:diagnosis_id(id,image_url,plant_label,disease_label,created_at)",
+                    "select": "id,diagnosis_id,user_id,is_correct,note,created_at",
                     "order": "created_at.desc",
                 }
-                r = requests.get(endpoint, headers=headers, params=params, timeout=30)
-                if r.status_code == 200:
-                    records = r.json()
+                query = urllib.parse.urlencode(params)
+                request_url = f"{endpoint}?{query}"
+                req = urllib.request.Request(request_url, headers=headers)
+                with urllib.request.urlopen(req, timeout=30) as response:
+                    records = json.loads(response.read().decode("utf-8"))
+                    diagnosis_ids = sorted({str(rec.get("diagnosis_id") or "") for rec in records if rec.get("diagnosis_id")})
+                    diagnosis_map: dict[str, dict[str, Any]] = {}
+                    if diagnosis_ids:
+                        diag_params = {
+                            "select": "id,image_url,plant_label,disease_label,plant_confidence,disease_confidence",
+                            "id": f"in.({','.join(diagnosis_ids)})",
+                        }
+                        diag_query = urllib.parse.urlencode(diag_params)
+                        diag_request_url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/diagnoses?{diag_query}"
+                        diag_req = urllib.request.Request(diag_request_url, headers=headers)
+                        with urllib.request.urlopen(diag_req, timeout=30) as diag_response:
+                            diag_records = json.loads(diag_response.read().decode("utf-8"))
+                            diagnosis_map = {str(rec.get("id") or ""): rec for rec in diag_records}
+
                     now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
                     out_file = out_dir / f"feedbacks_export_{now}.csv"
                     import csv
 
                     with out_file.open("w", newline="", encoding="utf-8") as fh:
                         w = csv.writer(fh)
-                        w.writerow(["image_url","plant_label","disease_label","user_id","is_correct","note","feedback_created_at","diagnosis_id"])
+                        w.writerow(["image_url","plant_label","disease_label","plant_confidence","disease_confidence","user_id","is_correct","note","feedback_created_at","diagnosis_id"])
                         for rec in records:
-                            diag = rec.get("diagnosis") or {}
+                            diagnosis = diagnosis_map.get(str(rec.get("diagnosis_id") or ""), {})
                             w.writerow([
-                                diag.get("image_url") or "",
-                                diag.get("plant_label") or "",
-                                diag.get("disease_label") or "",
+                                diagnosis.get("image_url") or "",
+                                diagnosis.get("plant_label") or "",
+                                diagnosis.get("disease_label") or "",
+                                diagnosis.get("plant_confidence") or "",
+                                diagnosis.get("disease_confidence") or "",
                                 rec.get("user_id") or "",
                                 rec.get("is_correct") or False,
                                 (rec.get("note") or "").replace("\n", " "),
                                 rec.get("created_at") or "",
-                                diag.get("id") or "",
+                                rec.get("diagnosis_id") or "",
                             ])
                     LOGGER.info("Wrote feedback export: %s", str(out_file))
-                else:
-                    LOGGER.warning("Feedback aggregator fetch failed: %s %s", r.status_code, r.text[:200])
             except Exception:
                 LOGGER.exception("Feedback aggregator encountered an error")
 

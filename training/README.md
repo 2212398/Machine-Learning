@@ -1,3 +1,27 @@
+# Retraining exports and migration
+
+This folder contains tools to export labeled user feedback for retraining.
+
+Files:
+- `export_feedbacks_for_retraining.py` — Export feedback rows to CSV manifest (requires service role key).
+
+Quick steps:
+
+1. Run the exporter locally (requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` env vars):
+
+   PowerShell example:
+
+   ```powershell
+   $env:SUPABASE_URL = 'https://<your-project>.supabase.co'
+   $env:SUPABASE_SERVICE_ROLE_KEY = '<service-role-key>'
+   python .\export_feedbacks_for_retraining.py
+   ```
+
+2. CSV manifests will be written to `retraining_exports/` in this folder.
+
+Notes:
+- The exporter uses the Supabase REST API and requires a service-role key. Keep that key secret.
+- The exporter falls back to `diagnoses` to populate the retraining snapshot fields, so it works even if `feedbacks` does not yet have those extra columns.
 # Training Scripts
 
 This folder contains baseline scripts for training two MobileNetV3 models:

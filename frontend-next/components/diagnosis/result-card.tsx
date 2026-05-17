@@ -19,8 +19,17 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
     immediate: string[];
     monitor: string[];
     consult: string[];
-  } | null>(null);
+  }>({
+    immediate: [],
+    monitor: [],
+    consult: [],
+  });
   const [showChecklistModal, setShowChecklistModal] = useState(false);
+
+  const hasChecklist =
+    checklist.immediate.length > 0 ||
+    checklist.monitor.length > 0 ||
+    checklist.consult.length > 0;
 
   const plantConfidencePercent = Math.round(result.plant_confidence * 100);
   const diseaseConfidencePercent = Math.round(
@@ -180,16 +189,16 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
         </div>
 
         {/* Checklist modal trigger */}
-        {checklist ? (
+        {hasChecklist ? (
           <div className="mt-2">
-            <Button onClick={() => setShowChecklistModal(true)} variant="outline">
+            <Button onClick={() => setShowChecklistModal(true)} variant="secondary">
               Xem chi tiết & In
             </Button>
           </div>
         ) : null}
 
         {/* Modal */}
-        {showChecklistModal ? (
+        {showChecklistModal && hasChecklist ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-white p-6 rounded-lg max-w-3xl w-full">
               <div className="flex justify-between items-center mb-4">
