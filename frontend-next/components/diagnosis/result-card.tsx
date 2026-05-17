@@ -41,10 +41,12 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
   useEffect(() => {
     const fetchRecommendation = async () => {
       try {
-        const url = `/api/recommendation?disease_label=${encodeURIComponent(
+        const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || "";
+        const base = FASTAPI_URL || window.location.origin;
+        const url = `${base}/api/recommendation?disease_label=${encodeURIComponent(
           result.disease_label
         )}&plant_label=${encodeURIComponent(result.plant_label)}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         setRecommendation(data.summary || null);
