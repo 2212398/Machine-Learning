@@ -20,6 +20,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
     monitor: string[];
     consult: string[];
   } | null>(null);
+  const [showChecklistModal, setShowChecklistModal] = useState(false);
 
   const plantConfidencePercent = Math.round(result.plant_confidence * 100);
   const diseaseConfidencePercent = Math.round(
@@ -149,7 +150,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
           )}
 
           {checklist ? (
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-surface-dark">
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-surface-dark">
               <div>
                 <h4 className="font-semibold">Hành động ngay</h4>
                 <ul className="list-disc pl-5 mt-1">
@@ -177,6 +178,67 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
             </div>
           ) : null}
         </div>
+
+        {/* Checklist modal trigger */}
+        {checklist ? (
+          <div className="mt-2">
+            <Button onClick={() => setShowChecklistModal(true)} variant="outline">
+              Xem chi tiết & In
+            </Button>
+          </div>
+        ) : null}
+
+        {/* Modal */}
+        {showChecklistModal ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white p-6 rounded-lg max-w-3xl w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Chi tiết khuyến nghị</h3>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => window.print()}
+                    className="text-sm"
+                  >
+                    In
+                  </Button>
+                  <Button variant="secondary" onClick={() => setShowChecklistModal(false)}>
+                    Đóng
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <p className="text-sm">{recommendation}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <h4 className="font-semibold">Hành động ngay</h4>
+                    <ul className="list-disc pl-5 mt-1">
+                      {checklist.immediate.map((it, i) => (
+                        <li key={i}>{it}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Theo dõi</h4>
+                    <ul className="list-disc pl-5 mt-1">
+                      {checklist.monitor.map((it, i) => (
+                        <li key={i}>{it}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Khi cần tư vấn</h4>
+                    <ul className="list-disc pl-5 mt-1">
+                      {checklist.consult.map((it, i) => (
+                        <li key={i}>{it}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {/* Actions */}
         <div className="flex gap-3">

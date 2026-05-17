@@ -94,6 +94,81 @@ JPEG_MAGIC = b"\xff\xd8"
 
 app = FastAPI(title="Plant Leaf Detection API", version="2.0.0")
 
+
+# Background feedback aggregation (periodically export feedbacks for retraining)
+import threading
+import time as _time
+import requests
+
+
+def _start_feedback_aggregator(interval_sec: int = 60 * 60):
+    """Start a background thread that exports feedbacks to a local CSV periodically.
+
+    Requires env vars `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to be set.
+    The job writes CSV files under `training/retraining_exports/` in the repo root.
+    """
+    SUPABASE_URL = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+    SERVICE_ROLE = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE")
+    if not SUPABASE_URL or not SERVICE_ROLE:
+        LOGGER.info("Feedback aggregator disabled: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
+        return
+
+    repo_root = PROJECT_DIR
+    out_dir = repo_root / "training" / "retraining_exports"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    headers = {"apikey": SERVICE_ROLE, "Authorization": f"Bearer {SERVICE_ROLE}"}
+    endpoint = SUPABASE_URL.rstrip("/") + "/rest/v1/feedbacks"
+
+    def _worker():
+        while True:
+            try:
+                params = {
+                    "select": "*,diagnosis:diagnosis_id(id,image_url,plant_label,disease_label,created_at)",
+                    "order": "created_at.desc",
+                }
+                r = requests.get(endpoint, headers=headers, params=params, timeout=30)
+                if r.status_code == 200:
+                    records = r.json()
+                    now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+                    out_file = out_dir / f"feedbacks_export_{now}.csv"
+                    import csv
+
+                    with out_file.open("w", newline="", encoding="utf-8") as fh:
+                        w = csv.writer(fh)
+                        w.writerow(["image_url","plant_label","disease_label","user_id","is_correct","note","feedback_created_at","diagnosis_id"])
+                        for rec in records:
+                            diag = rec.get("diagnosis") or {}
+                            w.writerow([
+                                diag.get("image_url") or "",
+                                diag.get("plant_label") or "",
+                                diag.get("disease_label") or "",
+                                rec.get("user_id") or "",
+                                rec.get("is_correct") or False,
+                                (rec.get("note") or "").replace("\n", " "),
+                                rec.get("created_at") or "",
+                                diag.get("id") or "",
+                            ])
+                    LOGGER.info("Wrote feedback export: %s", str(out_file))
+                else:
+                    LOGGER.warning("Feedback aggregator fetch failed: %s %s", r.status_code, r.text[:200])
+            except Exception:
+                LOGGER.exception("Feedback aggregator encountered an error")
+
+            _time.sleep(interval_sec)
+
+    t = threading.Thread(target=_worker, daemon=True, name="feedback-aggregator")
+    t.start()
+
+
+@app.on_event("startup")
+def _maybe_start_aggregator():
+    # start aggregator with 1 hour interval by default
+    try:
+        _start_feedback_aggregator(interval_sec=int(os.getenv("FEEDBACK_AGGREGATOR_INTERVAL", 60 * 60)))
+    except Exception:
+        LOGGER.exception("Failed to start feedback aggregator")
+
 cors_allow_origins = ALLOWED_ORIGINS or []
 cors_allow_origin_regex = ALLOWED_ORIGIN_REGEX
 cors_allow_credentials = True
