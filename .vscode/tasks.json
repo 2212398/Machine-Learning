@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Train Plant",
+			"type": "shell",
+			"command": ".\\code\\training\\run_train_plant.ps1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Train Disease",
+			"type": "shell",
+			"command": ".\\code\\training\\run_train_disease.ps1",
+			"isBackground": true,
+			"group": "build"
+		}
+	]
+}
