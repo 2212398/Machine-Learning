@@ -1,0 +1,15 @@
+.git
+.next
+node_modules
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache
+**/.mypy_cache
+**/.venv
+training/retraining_exports
+backend/app/upload_archive
+backend/app/models
+frontend-next/node_modules
+frontend-next/.next

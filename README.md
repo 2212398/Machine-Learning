@@ -90,6 +90,34 @@ py -m uvicorn backend.app.main:app --app-dir code --host 127.0.0.1 --port 8000
 http://127.0.0.1:8000
 ```
 
+## Docker Deployment
+
+The repository now includes a minimal Docker setup for the production-shaped Phase 3 deployment:
+
+- `Dockerfile.backend` for the FastAPI AI service
+- `Dockerfile.frontend` for the Next.js frontend
+- `docker-compose.yml` to run both services together
+- `nginx/default.conf` for reverse proxy and TLS termination
+
+Example:
+
+```powershell
+docker compose up --build
+```
+
+Required environment variables for the frontend/backend compose run:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_FASTAPI_URL`
+- `DOMAIN` or a direct HTTPS `NEXT_PUBLIC_FASTAPI_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Nginx serves the app on ports 80/443, redirects HTTP to HTTPS, proxies `/api/` to the FastAPI backend, and proxies everything else to Next.js. Replace the placeholder certificate path in `nginx/default.conf` with your real domain before production use.
+
+The backend mounts the model, labels, upload archive, and retraining export folders so the container can reuse local assets without rebuilding the image every time.
+
 ## Upload Limits + Datalake Archive
 
 The API applies upload safety limits and stores user uploads in a datalake-style archive for later dataset improvement.
