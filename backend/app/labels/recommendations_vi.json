@@ -1,0 +1,595 @@
+{
+  "Apple___Apple_scab": {
+    "summary": "Bệnh ghẻ táo: thu gom lá/quả rụng, tỉa tán cho thông thoáng, hạn chế ẩm kéo dài. Có thể cân nhắc phun thuốc phòng trừ nấm theo khuyến cáo địa phương (đúng liều, đúng thời điểm).",
+    "checklist": {
+      "immediate": [
+        "Thu gom lá/quả rụng và tiêu hủy tàn dư bệnh",
+        "Tỉa tán cho thông thoáng; ưu tiên tưới gốc, tránh lá ướt lâu",
+        "Vệ sinh khu vực trồng để giảm nguồn lây"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: vết bệnh có lan rộng nhanh không",
+        "Kiểm tra cây lân cận, nhất là sau mưa/ẩm"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc xuất hiện trên nhiều cây",
+        "Nếu cần phun thuốc phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Apple___Black_rot": {
+    "summary": "Thối đen trên táo: cắt bỏ cành/lá/quả bị hại, vệ sinh vườn và tiêu hủy tàn dư bệnh. Tỉa tán để giảm ẩm, theo dõi lây lan và cân nhắc biện pháp phòng trừ nấm phù hợp.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ cành/lá/quả bị bệnh nặng và tiêu hủy tàn dư",
+        "Giữ tán cây thông thoáng; ưu tiên tưới gốc, tránh lá ướt lâu",
+        "Vệ sinh vườn để giảm nguồn lây (lá rụng, quả rụng)"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: vết thối/đốm có lan rộng nhanh không",
+        "Kiểm tra cây lân cận, đặc biệt sau mưa"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc xuất hiện trên nhiều cây",
+        "Nếu cần biện pháp phòng trị bằng thuốc, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Apple___Cedar_apple_rust": {
+    "summary": "Gỉ sắt táo (cedar apple rust): tỉa tán thông thoáng, thu gom lá bệnh. Nếu khu vực có cây bách/Juniper gần đó, nên giảm nguồn lây. Cân nhắc thuốc phòng trừ nấm theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Thu gom lá bệnh, vệ sinh tàn dư để giảm nguồn bào tử",
+        "Tỉa tán thông thoáng; hạn chế lá ướt lâu",
+        "Giảm nguồn lây gần vườn (nếu có cây ký chủ như Juniper)"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: nốt gỉ có tăng nhanh không",
+        "Quan sát lá non vì thường bị ảnh hưởng mạnh"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh trong điều kiện ẩm kéo dài",
+        "Nếu cần phun thuốc phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Apple___healthy": {
+    "summary": "Lá táo hiện khỏe. Duy trì tưới vừa đủ, bón cân đối, tỉa tán thoáng và kiểm tra định kỳ 2-3 ngày/lần.",
+    "checklist": {
+      "immediate": [
+        "Duy trì tưới vừa đủ, ưu tiên tưới gốc",
+        "Tỉa tán nhẹ để cây luôn thông thoáng"
+      ],
+      "monitor": [
+        "Kiểm tra định kỳ 2-3 ngày: đốm lá, sâu hại, vàng lá",
+        "Theo dõi sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu cây giảm sinh trưởng rõ rệt hoặc rụng lá nhiều"
+      ]
+    }
+  },
+
+  "Cherry___Powdery_mildew": {
+    "summary": "Phấn trắng trên cherry: tỉa cành tạo thông thoáng, hạn chế ẩm/rục rịt, loại bỏ lá bị nặng. Có thể cân nhắc phun chế phẩm phù hợp (ví dụ lưu huỳnh/thuốc trừ nấm) theo hướng dẫn sử dụng và khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Tỉa cành/tán để tăng thông thoáng, giảm ẩm trong tán",
+        "Loại bỏ lá bị phủ phấn trắng nặng",
+        "Ưu tiên tưới gốc, tránh tưới phun vào chiều tối"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: mảng phấn có lan sang lá mới không",
+        "Kiểm tra chồi non và mặt dưới lá"
+      ],
+      "consult": [
+        "Nếu bệnh tái phát liên tục hoặc lan nhanh",
+        "Nếu cần phun thuốc trừ nấm, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Cherry___healthy": {
+    "summary": "Lá cherry hiện khỏe. Duy trì tưới vừa đủ, vệ sinh vườn, tránh tưới phun trực tiếp lên lá vào chiều tối.",
+    "checklist": {
+      "immediate": [
+        "Duy trì tưới vừa đủ, ưu tiên tưới gốc",
+        "Giữ vườn sạch và thông thoáng"
+      ],
+      "monitor": [
+        "Kiểm tra định kỳ 2-3 ngày: đốm lá, sâu hại",
+        "Theo dõi sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu cây giảm sinh trưởng rõ rệt"
+      ]
+    }
+  },
+
+  "Corn___Cercospora_leaf_spot Gray_leaf_spot": {
+    "summary": "Đốm lá (Cercospora/Gray leaf spot) trên ngô: loại bỏ lá bị nặng nếu có thể, vệ sinh tàn dư sau vụ, luân canh và giảm mật độ để tăng thông thoáng. Cân nhắc biện pháp phòng trừ nấm theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Loại bỏ lá bị bệnh nặng (nếu điều kiện cho phép)",
+        "Giữ ruộng thông thoáng, giảm ẩm trên lá",
+        "Vệ sinh tàn dư sau vụ để giảm nguồn lây"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: đốm có lan rộng nhanh không",
+        "Kiểm tra sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều lá trên cây",
+        "Nếu cần dùng thuốc phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Corn___Common_rust": {
+    "summary": "Gỉ sắt thường trên ngô: theo dõi mức độ lan rộng, giữ ruộng thông thoáng, bón cân đối (tránh thừa đạm). Nếu bệnh nặng/lan nhanh, cân nhắc phun thuốc trừ nấm theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Giữ ruộng thông thoáng, hạn chế lá ướt lâu",
+        "Bón dinh dưỡng cân đối, tránh thừa đạm",
+        "Vệ sinh cỏ dại/tàn dư để giảm nơi trú bệnh"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: nốt gỉ có tăng nhanh không",
+        "Kiểm tra lá giữa và lá trên (bệnh thường lan theo tầng lá)"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc xuất hiện trên nhiều cây",
+        "Nếu cần phun thuốc trừ nấm, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Corn___Northern_Leaf_Blight": {
+    "summary": "Cháy lá phương Bắc trên ngô: thu gom tàn dư, luân canh, chọn giống kháng nếu có. Khi bệnh tăng nhanh, cân nhắc biện pháp phòng trừ nấm phù hợp theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Giữ ruộng thông thoáng, hạn chế ẩm kéo dài trên lá",
+        "Vệ sinh tàn dư, hạn chế nguồn lây cho vụ sau",
+        "Nếu có thể, loại bỏ lá bị nặng để giảm bào tử"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: vết cháy có lan nhanh không",
+        "Kiểm tra cây lân cận để phát hiện sớm"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều lá",
+        "Nếu cần biện pháp phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Corn___healthy": {
+    "summary": "Lá ngô hiện khỏe. Duy trì dinh dưỡng cân đối, tưới hợp lý và kiểm tra sâu bệnh định kỳ.",
+    "checklist": {
+      "immediate": [
+        "Duy trì tưới hợp lý và thoát nước tốt",
+        "Bón dinh dưỡng cân đối"
+      ],
+      "monitor": [
+        "Kiểm tra định kỳ 2-3 ngày: đốm lá, sâu hại",
+        "Theo dõi sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu nhiều cây có dấu hiệu bất thường cùng lúc"
+      ]
+    }
+  },
+
+  "Grape___Black_rot": {
+    "summary": "Thối đen trên nho: cắt bỏ lá/chùm bị bệnh, vệ sinh giàn nho, tỉa tán giảm ẩm. Cân nhắc phun phòng trừ nấm theo khuyến cáo địa phương, nhất là sau mưa.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá/chùm bị bệnh nặng và tiêu hủy tàn dư",
+        "Tỉa tán và sắp xếp giàn để tăng thông gió",
+        "Tránh tưới phun lên tán lá, nhất là chiều tối"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: đốm có lan rộng nhanh không",
+        "Kiểm tra sau mưa vì bệnh dễ bùng phát"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều chùm",
+        "Nếu cần phun phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Grape___Esca_(Black_Measles)": {
+    "summary": "Bệnh Esca (đốm đen) trên nho: tỉa bỏ phần bị nặng, khử trùng dụng cụ cắt tỉa và vệ sinh vườn. Theo dõi cây lân cận; cân nhắc tư vấn kỹ thuật địa phương vì bệnh gỗ thường khó xử lý triệt để.",
+    "checklist": {
+      "immediate": [
+        "Đánh dấu cây nghi bệnh, hạn chế lây lan qua thao tác",
+        "Khử trùng dụng cụ cắt tỉa giữa các cây",
+        "Tỉa bỏ phần bị nặng (nếu có) và vệ sinh tàn dư"
+      ],
+      "monitor": [
+        "Theo dõi 1-2 tuần: cây có suy kiệt/chết cành tăng không",
+        "Quan sát lá và chùm quả xem có triệu chứng bất thường mới"
+      ],
+      "consult": [
+        "Nếu cây suy kiệt nhanh hoặc bệnh lan nhiều cây",
+        "Nếu cần kế hoạch xử lý dài hạn (bệnh gỗ), nên hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {
+    "summary": "Cháy lá/đốm lá Isariopsis trên nho: cắt bỏ lá bệnh, tăng thông gió, tránh tưới phun lên tán lá. Có thể cân nhắc thuốc phòng trừ nấm theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá bị bệnh nặng và thu gom tàn dư",
+        "Tăng thông gió giàn nho, giảm ẩm trên tán",
+        "Tránh tưới phun lên tán lá"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: đốm/cháy lá có lan nhanh không",
+        "Kiểm tra cây lân cận, nhất là sau mưa"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng diện rộng",
+        "Nếu cần phun thuốc phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Grape___healthy": {
+    "summary": "Lá nho hiện khỏe. Duy trì tỉa tán thông thoáng, tưới vừa đủ và theo dõi sau những đợt mưa/ẩm kéo dài.",
+    "checklist": {
+      "immediate": [
+        "Duy trì tỉa tán/giàn thông thoáng",
+        "Tưới vừa đủ, tránh để tán lá ướt lâu"
+      ],
+      "monitor": [
+        "Kiểm tra định kỳ 2-3 ngày: đốm lá, mốc, sâu hại",
+        "Theo dõi kỹ sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu cây giảm sinh trưởng rõ rệt"
+      ]
+    }
+  },
+
+  "Peach___Bacterial_spot": {
+    "summary": "Đốm vi khuẩn trên đào: cắt bỏ lá/cành bị bệnh, tránh tưới phun lên lá, khử trùng dụng cụ. Có thể cân nhắc chế phẩm gốc đồng theo hướng dẫn sử dụng và khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá/cành bị bệnh nặng, thao tác nhẹ để tránh lây",
+        "Tránh tưới phun lên lá; ưu tiên tưới gốc",
+        "Khử trùng dụng cụ cắt tỉa trước/sau khi thao tác"
+      ],
+      "monitor": [
+        "Theo dõi mỗi ngày: vết bệnh có tăng nhanh sau mưa/tưới không",
+        "Kiểm tra lá non vì thường nhạy với bệnh"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc cây suy yếu rõ rệt",
+        "Nếu cần dùng chế phẩm (ví dụ gốc đồng), hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Peach___healthy": {
+    "summary": "Lá đào hiện khỏe. Duy trì tưới hợp lý, tỉa thoáng và kiểm tra định kỳ.",
+    "checklist": {
+      "immediate": [
+        "Tưới hợp lý, ưu tiên tưới gốc",
+        "Tỉa thoáng để lá khô nhanh"
+      ],
+      "monitor": [
+        "Kiểm tra định kỳ 2-3 ngày: đốm lá, sâu hại",
+        "Theo dõi sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu cây giảm sinh trưởng hoặc rụng lá nhiều"
+      ]
+    }
+  },
+
+  "Pepper,_bell___Bacterial_spot": {
+    "summary": "Đốm vi khuẩn trên ớt chuông: cắt lá bệnh, tránh tưới lên lá, khử trùng dụng cụ và hạn chế làm việc khi lá ướt. Có thể cân nhắc chế phẩm gốc đồng theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá bệnh nặng và thu gom tàn dư",
+        "Tránh tưới phun lên lá; hạn chế thao tác khi lá còn ướt",
+        "Khử trùng dụng cụ cắt tỉa trước/sau khi thao tác"
+      ],
+      "monitor": [
+        "Theo dõi mỗi ngày: vết bệnh có tăng nhanh sau mưa/tưới không",
+        "Kiểm tra lá non và cây lân cận"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều cây",
+        "Nếu cần dùng chế phẩm (ví dụ gốc đồng), hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Pepper,_bell___healthy": {
+    "summary": "Lá ớt chuông hiện khỏe. Giữ vườn thông thoáng, tưới gốc (tránh tưới phun) và theo dõi định kỳ.",
+    "checklist": {
+      "immediate": [
+        "Giữ vườn thông thoáng, tránh ẩm kéo dài",
+        "Tưới gốc, hạn chế tưới phun lên lá"
+      ],
+      "monitor": [
+        "Kiểm tra định kỳ 2-3 ngày: đốm lá, sâu hại",
+        "Theo dõi sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu nhiều cây có dấu hiệu bất thường cùng lúc"
+      ]
+    }
+  },
+
+  "Potato___Early_blight": {
+    "summary": "Đốm sớm trên khoai tây: loại bỏ lá bị bệnh, giữ ruộng thông thoáng, hạn chế tưới phun lên lá. Bổ sung dinh dưỡng cân đối; cân nhắc thuốc trừ nấm theo khuyến cáo địa phương nếu bệnh lan nhanh.",
+    "checklist": {
+      "immediate": [
+        "Loại bỏ lá bị bệnh nặng và thu gom tàn dư",
+        "Giữ ruộng thông thoáng; hạn chế tưới phun lên lá",
+        "Bón dinh dưỡng cân đối để cây phục hồi"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: vết bệnh có lan lên lá mới không",
+        "Kiểm tra cây lân cận, nhất là sau mưa"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều lá",
+        "Nếu cần phun thuốc trừ nấm, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Potato___Late_blight": {
+    "summary": "Sương mai/đốm muộn trên khoai tây: xử lý sớm để tránh lây lan—cắt bỏ lá bị nặng, giảm ẩm vùng lá, kiểm tra cây lân cận. Cân nhắc thuốc đặc trị theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá bị bệnh nặng sớm và tiêu hủy tàn dư",
+        "Giảm ẩm vùng lá: tăng thông gió, tránh tưới phun",
+        "Cách ly khu vực/cây bị nặng để hạn chế lây lan"
+      ],
+      "monitor": [
+        "Theo dõi hằng ngày, nhất là sau mưa/đêm ẩm",
+        "Kiểm tra cây lân cận để xử lý sớm"
+      ],
+      "consult": [
+        "Nếu bệnh lan rất nhanh trong 24-48 giờ",
+        "Nếu cần thuốc đặc trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Potato___healthy": {
+    "summary": "Lá khoai tây đang khỏe. Duy trì tưới vừa đủ, bón cân đối và kiểm tra sâu bệnh mỗi 2-3 ngày.",
+    "checklist": {
+      "immediate": [
+        "Tưới vừa đủ, tránh úng",
+        "Bón dinh dưỡng cân đối"
+      ],
+      "monitor": [
+        "Kiểm tra 2-3 ngày/lần: đốm lá, sâu hại",
+        "Theo dõi sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu cây héo/vàng nhanh bất thường"
+      ]
+    }
+  },
+
+  "Strawberry___Leaf_scorch": {
+    "summary": "Cháy lá trên dâu tây: cắt bỏ lá bị nặng, giữ luống thoáng và hạn chế ẩm kéo dài trên tán lá. Cân nhắc biện pháp phòng trừ nấm theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá bị cháy nặng và thu gom tàn dư",
+        "Giữ luống thoáng, giảm ẩm trên tán lá",
+        "Ưu tiên tưới gốc, tránh lá ướt lâu"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: cháy lá có lan sang lá mới không",
+        "Kiểm tra cây lân cận, nhất là sau mưa"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều cây",
+        "Nếu cần biện pháp phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Strawberry___healthy": {
+    "summary": "Lá dâu tây hiện khỏe. Duy trì tưới vừa đủ, vệ sinh tàn dư lá già và theo dõi định kỳ.",
+    "checklist": {
+      "immediate": [
+        "Duy trì tưới vừa đủ, ưu tiên tưới gốc",
+        "Vệ sinh lá già/tàn dư để luống sạch"
+      ],
+      "monitor": [
+        "Kiểm tra định kỳ 2-3 ngày: đốm lá, sâu hại",
+        "Theo dõi sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu cây giảm sinh trưởng rõ rệt"
+      ]
+    }
+  },
+
+  "Tomato___Bacterial_spot": {
+    "summary": "Đốm vi khuẩn trên cà chua: cắt bỏ lá bệnh, tránh tưới lên lá, khử trùng dụng cụ. Có thể cân nhắc chế phẩm gốc đồng theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá bệnh nặng, thao tác nhẹ để tránh lây",
+        "Tránh tưới phun lên lá; ưu tiên tưới gốc",
+        "Khử trùng dụng cụ cắt tỉa trước/sau khi thao tác"
+      ],
+      "monitor": [
+        "Theo dõi mỗi ngày: vết bệnh có tăng nhanh sau mưa/tưới không",
+        "Kiểm tra lá non và cây lân cận"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc cây suy yếu rõ rệt",
+        "Nếu cần dùng chế phẩm (ví dụ gốc đồng), hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___Early_blight": {
+    "summary": "Đốm sớm trên cà chua: cắt bỏ lá bị bệnh, giữ tán lá thông thoáng, hạn chế tưới phun vào lá. Cân nhắc phun thuốc phòng trừ nấm theo hướng dẫn sử dụng.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá bị bệnh nặng và thu gom tàn dư",
+        "Giữ tán lá thông thoáng; hạn chế tưới phun",
+        "Vệ sinh gốc cây/khu vực trồng để giảm nguồn lây"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: đốm có lan lên lá mới không",
+        "Kiểm tra sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều lá",
+        "Nếu cần phun thuốc phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___Late_blight": {
+    "summary": "Sương mai/đốm muộn trên cà chua: cách ly phần bị nặng, giảm độ ẩm vùng lá và kiểm tra cây lân cận. Cân nhắc thuốc đặc trị theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá bị bệnh nặng sớm và tiêu hủy tàn dư",
+        "Giảm ẩm vùng lá: tăng thông gió, tránh tưới phun",
+        "Cách ly cây/phần bị nặng để hạn chế lây lan"
+      ],
+      "monitor": [
+        "Theo dõi hằng ngày, nhất là sau mưa/đêm ẩm",
+        "Kiểm tra cây lân cận để xử lý sớm"
+      ],
+      "consult": [
+        "Nếu bệnh lan rất nhanh trong 24-48 giờ",
+        "Nếu cần thuốc đặc trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___Leaf_Mold": {
+    "summary": "Mốc lá trên cà chua: tăng thông gió nhà lưới, tránh độ ẩm cao kéo dài, cắt bỏ lá bệnh và theo dõi 2-3 ngày. Cân nhắc thuốc phòng trừ nấm nếu bệnh lan rộng.",
+    "checklist": {
+      "immediate": [
+        "Tăng thông gió (đặc biệt trong nhà lưới/nhà kính)",
+        "Cắt bỏ lá bị mốc nặng và thu gom tàn dư",
+        "Giảm ẩm: tránh để lá ướt lâu, ưu tiên tưới gốc"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: mốc có lan sang lá mới không",
+        "Quan sát mặt dưới lá vì mốc thường xuất hiện rõ"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh trong điều kiện ẩm kéo dài",
+        "Nếu cần phun thuốc trừ nấm, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___Septoria_leaf_spot": {
+    "summary": "Đốm lá Septoria trên cà chua: loại bỏ lá bệnh, vệ sinh tàn dư, tránh tưới phun lên lá. Cân nhắc biện pháp phòng trừ nấm theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Loại bỏ lá bệnh nặng và thu gom tàn dư",
+        "Tránh tưới phun lên lá; ưu tiên tưới gốc",
+        "Giữ vườn thông thoáng để lá khô nhanh"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: đốm có lan rộng nhanh không",
+        "Kiểm tra cây lân cận, nhất là sau mưa"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều lá",
+        "Nếu cần phun thuốc phòng trị, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___Spider_mites Two-spotted_spider_mite": {
+    "summary": "Nhện đỏ hai chấm trên cà chua: kiểm tra mặt dưới lá, rửa/ phun tia nước nhẹ để giảm mật số, tăng ẩm vừa phải và loại bỏ lá bị nặng. Cân nhắc xà phòng/dầu khoáng/thuốc đặc trị nhện theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Kiểm tra mặt dưới lá; loại bỏ lá bị hại nặng",
+        "Rửa lá bằng tia nước nhẹ để giảm mật số (nếu phù hợp)",
+        "Giảm khô nóng: tăng ẩm vừa phải và giữ vườn thông thoáng"
+      ],
+      "monitor": [
+        "Theo dõi mỗi 1-2 ngày: chấm vàng/tơ nhện có tăng không",
+        "Kiểm tra cây lân cận vì nhện lan nhanh"
+      ],
+      "consult": [
+        "Nếu mật số nhện cao, cây vàng/xoăn nhiều",
+        "Nếu cần dùng thuốc đặc trị nhện, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___Target_Spot": {
+    "summary": "Đốm bia (Target spot) trên cà chua: cắt bỏ lá bệnh, giữ vườn thông thoáng, hạn chế lá ướt kéo dài. Cân nhắc thuốc trừ nấm theo khuyến cáo địa phương.",
+    "checklist": {
+      "immediate": [
+        "Cắt bỏ lá bị bệnh nặng và thu gom tàn dư",
+        "Giữ vườn thông thoáng; hạn chế lá ướt kéo dài",
+        "Tránh tưới phun lên lá, ưu tiên tưới gốc"
+      ],
+      "monitor": [
+        "Theo dõi 2-3 ngày: đốm có lan rộng nhanh không",
+        "Kiểm tra sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu bệnh lan nhanh hoặc ảnh hưởng nhiều lá",
+        "Nếu cần phun thuốc trừ nấm, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+    "summary": "Virus vàng xoăn lá cà chua: thường lây qua bọ phấn. Nên loại bỏ cây bị nặng, kiểm soát bọ phấn (lưới chắn, bẫy dính), vệ sinh cỏ dại ký chủ và hạn chế lây lan.",
+    "checklist": {
+      "immediate": [
+        "Loại bỏ cây bị nặng để giảm nguồn lây",
+        "Kiểm soát bọ phấn: lưới chắn/bẫy dính, vệ sinh cỏ dại ký chủ",
+        "Khử trùng tay/dụng cụ sau khi thao tác với cây bệnh"
+      ],
+      "monitor": [
+        "Theo dõi 3-5 ngày: lá non có tiếp tục xoăn vàng không",
+        "Kiểm tra mật độ bọ phấn trên cây lân cận"
+      ],
+      "consult": [
+        "Nếu nhiều cây bị cùng lúc hoặc bọ phấn bùng phát",
+        "Nếu cần phác đồ quản lý bọ phấn/virus phù hợp, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___Tomato_mosaic_virus": {
+    "summary": "Virus khảm cà chua: loại bỏ lá/cây bị nặng, khử trùng tay và dụng cụ, tránh lây cơ giới khi tỉa/cột cây. Theo dõi cây lân cận trong 3-5 ngày.",
+    "checklist": {
+      "immediate": [
+        "Loại bỏ lá/cây bị nặng để giảm nguồn lây",
+        "Khử trùng tay/dụng cụ; hạn chế thao tác liên tục giữa các cây",
+        "Tránh làm dập lá khi tỉa/cột cây để giảm lây cơ giới"
+      ],
+      "monitor": [
+        "Theo dõi 3-5 ngày: lá mới có khảm/xoăn không",
+        "Kiểm tra cây lân cận, nhất là cây mới trồng"
+      ],
+      "consult": [
+        "Nếu bệnh lan rộng trong vườn",
+        "Nếu cần hướng dẫn vệ sinh và loại bỏ cây để giảm lây, hãy hỏi kỹ thuật viên địa phương"
+      ]
+    }
+  },
+  "Tomato___healthy": {
+    "summary": "Lá cà chua hiện khỏe. Duy trì tưới đều, tưới gốc, tránh tưới lên lá vào chiều tối và theo dõi định kỳ.",
+    "checklist": {
+      "immediate": [
+        "Tưới đều, ưu tiên tưới gốc",
+        "Giữ tán lá thông thoáng, tránh lá ướt lâu"
+      ],
+      "monitor": [
+        "Kiểm tra định kỳ 2-3 ngày: đốm lá, sâu hại",
+        "Theo dõi kỹ sau mưa/ẩm kéo dài"
+      ],
+      "consult": [
+        "Nếu xuất hiện triệu chứng mới và lan nhanh",
+        "Nếu cây giảm sinh trưởng hoặc rụng lá nhiều"
+      ]
+    }
+  }
+}
