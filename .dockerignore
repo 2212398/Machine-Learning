@@ -1,15 +1,25 @@
 .git
-.next
-node_modules
+.vscode
+
+# Frontend build artifacts / deps
+frontend/node_modules
+frontend/.next
+frontend/.cache
+frontend/.env*
+frontend/tsconfig.tsbuildinfo
+
+# Python caches / envs
 **/__pycache__
-**/*.pyc
-**/*.pyo
-**/*.pyd
+**/*.py[cod]
 **/.pytest_cache
 **/.mypy_cache
 **/.venv
+**/venv
+
+# Runtime/export artifacts (generated)
 training/retraining_exports
+training/exports
 backend/app/upload_archive
+
+# Large model weights are mounted as volumes in docker-compose.yml
 backend/app/models
-frontend-next/node_modules
-frontend-next/.next

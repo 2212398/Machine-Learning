@@ -59,4 +59,4 @@ Write-Host "archive=$archiveRoot"
 Write-Host "output=$OutputDir"
 
 Set-Location (Join-Path $ProjectRoot "code\training")
-py @args
+python @args

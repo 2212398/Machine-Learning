@@ -15,6 +15,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [recommendationLoading, setRecommendationLoading] = useState(true);
   const [checklist, setChecklist] = useState<{
     immediate: string[];
     monitor: string[];
@@ -51,18 +52,26 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
   useEffect(() => {
     const fetchRecommendation = async () => {
       try {
-        const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || "http://localhost:8000";
-        const base = FASTAPI_URL;
-        const url = `${base}/api/recommendation?disease_label=${encodeURIComponent(
+        setRecommendationLoading(true);
+        const url = `/api/recommendation?disease_label=${encodeURIComponent(
           result.disease_label
         )}&plant_label=${encodeURIComponent(result.plant_label)}`;
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         setRecommendation(data.summary || null);
-        setChecklist(data.checklist || null);
+        const nextChecklist = data?.checklist;
+        setChecklist({
+          immediate: Array.isArray(nextChecklist?.immediate) ? nextChecklist.immediate : [],
+          monitor: Array.isArray(nextChecklist?.monitor) ? nextChecklist.monitor : [],
+          consult: Array.isArray(nextChecklist?.consult) ? nextChecklist.consult : [],
+        });
       } catch (e) {
         // ignore failures, recommendations are optional
+        setRecommendation(null);
+        setChecklist({ immediate: [], monitor: [], consult: [] });
+      } finally {
+        setRecommendationLoading(false);
       }
     };
 
@@ -152,10 +161,12 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
           <p className="text-sm text-brand-700">
             💡 <strong>Khuyến nghị:</strong>
           </p>
-          {recommendation ? (
+          {recommendationLoading ? (
+            <p className="mt-2 text-sm text-muted-foreground">Đang tải khuyến nghị…</p>
+          ) : recommendation ? (
             <p className="mt-2 text-sm text-brand-800">{recommendation}</p>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">Đang tải khuyến nghị…</p>
+            <p className="mt-2 text-sm text-muted-foreground">Chưa có khuyến nghị.</p>
           )}
 
           {checklist ? (

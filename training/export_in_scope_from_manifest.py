@@ -103,8 +103,8 @@ def _validate_yyyymmdd(value: str, flag_name: str) -> str:
 
 def _default_endpoints(target: str) -> set[str]:
     if target == "plant":
-        return {"/api/step1/plant", "/api/predict"}
-    return {"/api/step2/disease", "/api/predict"}
+        return {"/api/step1/plant"}
+    return {"/api/step2/disease"}
 
 
 def _parse_endpoints(value: str, target: str) -> set[str]:

@@ -75,17 +75,18 @@ Disable dedupe example:
 Date range example:
 
 ```powershell
-./run_export_in_scope.ps1 -Target plant -SinceDate 20260401 -UntilDate 20260430 -Endpoints "/api/step1/plant,/api/predict"
+./run_export_in_scope.ps1 -Target plant -SinceDate 20260401 -UntilDate 20260430 -Endpoints "/api/step1/plant"
 ```
 
 Direct Python example:
 
 ```powershell
-py export_in_scope_from_manifest.py --archive-root ../backend/app/upload_archive --output-root ./exports/in_scope_disease --target disease --copy-mode hardlink --dedupe-mode content-hash --clean-output --min-disease-confidence 0.7
+python export_in_scope_from_manifest.py --archive-root ../backend/app/upload_archive --output-root ./exports/in_scope_disease --target disease --copy-mode hardlink --dedupe-mode content-hash --clean-output --min-disease-confidence 0.7
 ```
 
-Deployment uses one MobileNetV3 model file in:
+Deployment uses two MobileNetV3 model files in:
 
-- `../backend/app/models/deployed_mobilenet.pt`
+- `../backend/app/models/plant_mobilenetv3.pt`
+- `../backend/app/models/disease_mobilenetv3.pt`
 
-You can keep experimenting with the two training scripts while updating one deploy model for API inference.
+You can keep experimenting with the two training scripts while updating both deploy models for API inference.

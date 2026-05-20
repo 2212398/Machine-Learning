@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { uploadAndDiagnose } from "@/lib/actions/diagnosis";
-import type { DiagnosisResult } from "@/types/api";
+import { uploadAndDiagnose, confirmAndDiagnose } from "@/lib/actions/diagnosis";
+import type { DiagnosisResult, Step1PlantResponse } from "@/types/api";
 
 interface UploadFormProps {
   onSuccess: (result: DiagnosisResult) => void;
@@ -15,6 +15,15 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
   const [preview, setPreview] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [step1, setStep1] = useState<Step1PlantResponse | null>(null);
+  const [selectedPlant, setSelectedPlant] = useState<string>("");
+  const [selectedPlantConfidence, setSelectedPlantConfidence] = useState<number>(0);
+
+  const resetFlowState = () => {
+    setStep1(null);
+    setSelectedPlant("");
+    setSelectedPlantConfidence(0);
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -34,6 +43,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
       const droppedFile = files[0];
       if (droppedFile.type.startsWith("image/")) {
         setFile(droppedFile);
+        resetFlowState();
         const reader = new FileReader();
         reader.onload = (event) => {
           setPreview(event.target?.result as string);
@@ -50,6 +60,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type.startsWith("image/")) {
       setFile(selectedFile);
+      resetFlowState();
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreview(event.target?.result as string);
@@ -72,9 +83,38 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
     setError("");
 
     try {
+      // If Step1 needs confirmation, proceed with Step2 using user's selection.
+      if (step1 && step1.requires_confirmation && !step1.auto_confirmed) {
+        if (!selectedPlant) {
+          setError("Vui lòng chọn loại cây để tiếp tục.");
+          return;
+        }
+        if (!step1.step2_access_token) {
+          setError("Thiếu token cho Bước 2. Vui lòng chạy lại Bước 1.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("confirmed_plant_label", selectedPlant);
+        formData.append("plant_confidence", String(selectedPlantConfidence));
+        formData.append("step2_access_token", step1.step2_access_token);
+
+        const result = await confirmAndDiagnose(formData);
+        if (result.error) {
+          setError(result.error);
+        } else if (result.data) {
+          onSuccess(result.data);
+          setFile(null);
+          setPreview("");
+          resetFlowState();
+        }
+        return;
+      }
+
+      // Otherwise run Step1 (and auto-Step2 when possible).
       const formData = new FormData();
       formData.append("file", file);
-
       const result = await uploadAndDiagnose(formData);
 
       if (result.error) {
@@ -83,6 +123,19 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
         onSuccess(result.data);
         setFile(null);
         setPreview("");
+        resetFlowState();
+      } else if (result.step1) {
+        setStep1(result.step1);
+
+        const candidates = result.step1.top_candidates ?? [];
+        const defaultLabel =
+          result.step1.plant_label && result.step1.plant_label !== "unknown_plant"
+            ? result.step1.plant_label
+            : candidates[0]?.label || "";
+        setSelectedPlant(defaultLabel);
+
+        const defaultCandidate = candidates.find((c) => c.label === defaultLabel);
+        setSelectedPlantConfidence(defaultCandidate?.confidence ?? result.step1.plant_confidence ?? 0);
       }
     } catch (err) {
       setError("Lỗi khi xử lý ảnh. Vui lòng thử lại.");
@@ -101,7 +154,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className="border-2 border-dashed border-border rounded-2xl p-8 text-center transition-colors cursor-pointer hover:border-brand-300"
+            className="relative border-2 border-dashed border-border rounded-2xl p-8 text-center transition-colors cursor-pointer hover:border-brand-300"
           >
             {preview ? (
               <div className="space-y-4">
@@ -149,6 +202,58 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
             <label htmlFor="file-input" className="cursor-pointer absolute inset-0 rounded-2xl" />
           </div>
 
+          {/* Step 1 confirmation */}
+          {step1 && step1.requires_confirmation && !step1.auto_confirmed ? (
+            <Card className="p-6">
+              <h3 className="text-base font-semibold text-foreground">Xác nhận loại cây</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {step1.message ||
+                  "Độ tin cậy chưa đủ chắc chắn. Hãy chọn loại cây đúng để hệ thống chỉ chẩn đoán bệnh trong phạm vi cây đó."}
+              </p>
+
+              {Array.isArray(step1.top_candidates) && step1.top_candidates.length > 0 ? (
+                <div className="mt-4 space-y-2">
+                  {step1.top_candidates.map((candidate) => {
+                    const isSelected = selectedPlant === candidate.label;
+                    const confPercent = Math.round((candidate.confidence || 0) * 100);
+                    return (
+                      <button
+                        key={candidate.label}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPlant(candidate.label);
+                          setSelectedPlantConfidence(candidate.confidence || 0);
+                          setError("");
+                        }}
+                        className={
+                          "w-full rounded-2xl border p-4 text-left transition-colors " +
+                          (isSelected
+                            ? "border-brand-200 bg-brand-50"
+                            : "border-border bg-surfaceAlt hover:bg-surfaceAlt/80")
+                        }
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium text-foreground">{candidate.label}</span>
+                          <span className="text-sm text-muted-foreground">{confPercent}%</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Không có gợi ý loại cây. Vui lòng chụp/crop lại ảnh rõ 1 lá rồi thử lại.
+                </p>
+              )}
+
+              {step1.step2_access_expires_in_sec ? (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Token Bước 2 hết hạn sau khoảng {step1.step2_access_expires_in_sec}s.
+                </p>
+              ) : null}
+            </Card>
+          ) : null}
+
           {/* Error message */}
           {error && (
             <div className="p-4 bg-danger-50 border border-danger-200 rounded-xl text-sm text-danger-700">
@@ -163,7 +268,11 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
               disabled={!file || loading}
               className="flex-1"
             >
-              {loading ? "Đang xử lý..." : "Chẩn đoán bệnh lá"}
+              {loading
+                ? "Đang xử lý..."
+                : step1 && step1.requires_confirmation && !step1.auto_confirmed
+                ? "Xác nhận & Chẩn đoán"
+                : "Chẩn đoán bệnh lá"}
             </Button>
             {file && (
               <Button
@@ -172,6 +281,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
                 onClick={() => {
                   setFile(null);
                   setPreview("");
+                  resetFlowState();
                 }}
               >
                 Xóa

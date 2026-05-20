@@ -18,4 +18,4 @@ Write-Host "train=$trainDir"
 Write-Host "val=$valDir"
 
 Set-Location (Join-Path $ProjectRoot "code\training")
-py $scriptPath --data-dir $trainDir --val-dir $valDir --epochs $Epochs --batch-size $BatchSize --backbone $Backbone --log-interval $LogInterval --num-workers $NumWorkers --output $output --label-output $labelOut
+python $scriptPath --data-dir $trainDir --val-dir $valDir --epochs $Epochs --batch-size $BatchSize --backbone $Backbone --log-interval $LogInterval --num-workers $NumWorkers --output $output --label-output $labelOut

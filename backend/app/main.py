@@ -48,6 +48,7 @@ from .config import (
     PLANT_LABELS_PATH,
     PLANT_THRESHOLD,
     RATE_LIMIT_MAX_REQUESTS,
+    RATE_LIMIT_CLEANUP_INTERVAL_SEC,
     RATE_LIMIT_WINDOW_SEC,
     RECOMMENDATION_PATH,
     PROJECT_DIR,
@@ -63,6 +64,7 @@ from .config import (
     UPLOAD_ARCHIVE_DIR,
     UPLOAD_ARCHIVE_ENABLED,
     UPLOAD_MAX_IMAGE_BYTES,
+    TRUST_PROXY_HEADERS,
 )
 from .inference import PlantDiseasePredictor
 from .preprocess import extract_leaf_region, extract_leaf_region_with_stats
@@ -82,6 +84,7 @@ INFERENCE_SEMAPHORE = asyncio.Semaphore(INFERENCE_MAX_CONCURRENCY)
 
 _RATE_LIMIT_BUCKETS: defaultdict[str, deque[float]] = defaultdict(deque)
 _RATE_LIMIT_LOCK = threading.Lock()
+_RATE_LIMIT_LAST_CLEANUP = 0.0
 
 _MANIFEST_APPEND_LOCK = threading.Lock()
 
@@ -277,18 +280,46 @@ def get_recommendation(disease_label: str, plant_label: str):
 
 
 def _client_ip_from_request(request: Request) -> str:
-    xff = request.headers.get("x-forwarded-for")
-    if xff:
-        return xff.split(",")[0].strip() or "unknown"
+    if TRUST_PROXY_HEADERS:
+        xri = request.headers.get("x-real-ip")
+        if xri:
+            return xri.strip() or "unknown"
 
-    xri = request.headers.get("x-real-ip")
-    if xri:
-        return xri.strip() or "unknown"
+        xff = request.headers.get("x-forwarded-for")
+        if xff:
+            parts = [p.strip() for p in xff.split(",") if p.strip()]
+            if parts:
+                # Prefer the last hop to reduce spoofing when proxies append via $proxy_add_x_forwarded_for.
+                return parts[-1]
 
     if request.client and request.client.host:
         return request.client.host
 
     return "unknown"
+
+
+def _maybe_cleanup_rate_limit_buckets(now: float) -> None:
+    global _RATE_LIMIT_LAST_CLEANUP
+
+    interval = float(RATE_LIMIT_CLEANUP_INTERVAL_SEC)
+    if interval <= 0:
+        return
+
+    if (now - _RATE_LIMIT_LAST_CLEANUP) < interval:
+        return
+
+    cutoff = now - float(RATE_LIMIT_WINDOW_SEC)
+    keys_to_delete: list[str] = []
+    for key, bucket in _RATE_LIMIT_BUCKETS.items():
+        while bucket and bucket[0] < cutoff:
+            bucket.popleft()
+        if not bucket:
+            keys_to_delete.append(key)
+
+    for key in keys_to_delete:
+        _RATE_LIMIT_BUCKETS.pop(key, None)
+
+    _RATE_LIMIT_LAST_CLEANUP = now
 
 
 def _enforce_rate_limit(request: Request, endpoint: str) -> None:
@@ -297,6 +328,7 @@ def _enforce_rate_limit(request: Request, endpoint: str) -> None:
     key = f"{endpoint}|{ip}"
 
     with _RATE_LIMIT_LOCK:
+        _maybe_cleanup_rate_limit_buckets(now)
         bucket = _RATE_LIMIT_BUCKETS[key]
         cutoff = now - float(RATE_LIMIT_WINDOW_SEC)
         while bucket and bucket[0] < cutoff:

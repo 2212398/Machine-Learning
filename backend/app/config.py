@@ -84,6 +84,16 @@ STEP2_FLOW_TOKEN_BIND_IP = _to_bool(os.getenv("STEP2_FLOW_TOKEN_BIND_IP", "0"), 
 INFERENCE_MAX_CONCURRENCY = _to_int(os.getenv("INFERENCE_MAX_CONCURRENCY", "2"), 2, min_value=1)
 RATE_LIMIT_WINDOW_SEC = _to_int(os.getenv("RATE_LIMIT_WINDOW_SEC", "60"), 60, min_value=1)
 RATE_LIMIT_MAX_REQUESTS = _to_int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60"), 60, min_value=1)
+RATE_LIMIT_CLEANUP_INTERVAL_SEC = _to_int(
+    os.getenv("RATE_LIMIT_CLEANUP_INTERVAL_SEC", str(RATE_LIMIT_WINDOW_SEC)),
+    RATE_LIMIT_WINDOW_SEC,
+    min_value=1,
+)
+
+# Proxy/IP handling
+# If you're running behind Nginx, enable this so rate limiting and optional token IP-binding
+# can use X-Real-IP / X-Forwarded-For.
+TRUST_PROXY_HEADERS = _to_bool(os.getenv("TRUST_PROXY_HEADERS", "0"), default=False)
 
 # Image decode guards (helps against oversized images / decompression bombs)
 MAX_IMAGE_WIDTH = _to_int(os.getenv("MAX_IMAGE_WIDTH", "6000"), 6000, min_value=64)
