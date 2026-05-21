@@ -60,7 +60,8 @@ services:
     volumes:
       - ./nginx/certbot:/var/www/certbot:rw
       - /etc/letsencrypt:/etc/letsencrypt:rw
-    entrypoint: ["/bin/sh", "-c"]
+    # entrypoint removed so we can run certbot commands via
+    # `docker compose run --rm certbot "certonly ..."` as needed
     # Use 'docker compose run --rm certbot "certonly --webroot --webroot-path=/var/www/certbot -d <your-domain> --email <you@example.com> --agree-tos --no-eff-email"' to obtain certs
     restart: "no"
 
