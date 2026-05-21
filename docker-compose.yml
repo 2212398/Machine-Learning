@@ -56,7 +56,7 @@ services:
     restart: unless-stopped
 
   certbot:
-    image: certbot/certbot:2.8.0
+    image: certbot/certbot:latest
     volumes:
       - ./nginx/certbot:/var/www/certbot:rw
       - /etc/letsencrypt:/etc/letsencrypt:rw
@@ -65,7 +65,7 @@ services:
     restart: "no"
 
   certbot-renew:
-    image: certbot/certbot:2.8.0
+    image: certbot/certbot:latest
     volumes:
       - ./nginx/certbot:/var/www/certbot:rw
       - /etc/letsencrypt:/etc/letsencrypt:rw

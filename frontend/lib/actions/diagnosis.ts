@@ -47,6 +47,13 @@ function _sanitizeStorageName(name: string): string {
   return safe.length > 120 ? safe.slice(-120) : safe;
 }
 
+async function _fileToDataUrl(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+  const mimeType = file.type || "image/jpeg";
+  return `data:${mimeType};base64,${base64}`;
+}
+
 async function _callFastApiStep1(file: File): Promise<Step1PlantResponse> {
   const fd = new FormData();
   fd.append("file", file);
@@ -122,8 +129,7 @@ async function _persistDiagnosis(params: {
     imageUrl = publicUrlData.publicUrl;
   } catch (storageError) {
     console.warn("[Diagnosis] Storage error (non-critical):", storageError);
-    imageUrl =
-      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+    imageUrl = await _fileToDataUrl(params.file);
   }
 
   const { data: diagnosis, error: dbError } = await (supabase.from("diagnoses") as any)

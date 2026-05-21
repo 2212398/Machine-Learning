@@ -111,14 +111,7 @@ class PlantDiseasePredictor:
             LOGGER.warning("%s model file not found at %s", model_name.capitalize(), model_path)
             return None
 
-        try:
-            model = torch.jit.load(str(model_path), map_location=self.device)
-            model.eval()
-            LOGGER.info("Loaded TorchScript %s model from %s", model_name, model_path)
-            return model
-        except Exception as exc:
-            LOGGER.warning("Could not load TorchScript %s model: %s", model_name, exc)
-
+        # Prefer loading checkpoints/state-dicts first (more common for this project).
         try:
             loaded_obj = torch.load(str(model_path), map_location=self.device)
 
@@ -129,24 +122,33 @@ class PlantDiseasePredictor:
                 return loaded_obj
 
             state_dict = self._extract_state_dict(loaded_obj)
-            if state_dict is None:
-                LOGGER.error("Unsupported checkpoint format for %s model at %s", model_name, model_path)
-                return None
+            if state_dict is not None:
+                model = self._build_classifier(backbone=backbone, num_classes=num_classes)
+                missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+                if missing_keys:
+                    LOGGER.warning("%s model missing keys: %s", model_name, missing_keys[:10])
+                if unexpected_keys:
+                    LOGGER.warning("%s model unexpected keys: %s", model_name, unexpected_keys[:10])
 
-            model = self._build_classifier(backbone=backbone, num_classes=num_classes)
-            missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-            if missing_keys:
-                LOGGER.warning("%s model missing keys: %s", model_name, missing_keys[:10])
-            if unexpected_keys:
-                LOGGER.warning("%s model unexpected keys: %s", model_name, unexpected_keys[:10])
+                model.to(self.device)
+                model.eval()
+                LOGGER.info("Loaded %s model checkpoint from %s", model_name, model_path)
+                return model
+        except Exception as exc:
+            # Keep this as info/debug rather than a loud error — may be a TorchScript archive.
+            LOGGER.debug("torch.load did not return state_dict/Module for %s: %s", model_name, exc)
 
-            model.to(self.device)
+        # As a fallback, try loading a TorchScript archive (may emit missing constants warnings).
+        try:
+            model = torch.jit.load(str(model_path), map_location=self.device)
             model.eval()
-            LOGGER.info("Loaded %s model checkpoint from %s", model_name, model_path)
+            LOGGER.info("Loaded TorchScript %s model from %s", model_name, model_path)
             return model
         except Exception as exc:
-            LOGGER.error("Could not load %s model from %s: %s", model_name, model_path, exc)
-            return None
+            LOGGER.warning("Could not load TorchScript %s model (fallback): %s", model_name, exc)
+
+        LOGGER.error("Unsupported or unreadable model format for %s at %s", model_name, model_path)
+        return None
 
     def _load_json_list(self, path: Path, default: list[str]) -> list[str]:
         if not path.exists():

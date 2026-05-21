@@ -5,15 +5,15 @@ import { getCurrentUser } from "@/lib/supabase/server";
 const pillars = [
   {
     title: "Xác thực người dùng",
-    description: "Supabase Auth được đặt làm lớp định danh cho toàn bộ CRUD và lịch sử chẩn đoán.",
+    description: "Người dùng đăng nhập an toàn để truy cập đúng dữ liệu chẩn đoán của tài khoản mình.",
   },
   {
     title: "Dữ liệu có RLS",
-    description: "Mỗi user chỉ nhìn thấy hồ sơ, lịch sử và ảnh thuộc về chính tài khoản đó.",
+    description: "Mỗi tài khoản chỉ xem được lịch sử, ảnh và kết quả do chính tài khoản đó tạo ra.",
   },
   {
-    title: "Chuẩn bị tích hợp AI",
-    description: "Trang chẩn đoán sẽ kết nối Storage -> FastAPI ở Phase 2, không trộn sớm logic ML vào UI.",
+    title: "Chẩn đoán AI hai bước",
+    description: "Hệ thống xử lý theo luồng nhận diện loại cây trước, sau đó phân tích bệnh phù hợp cho loại cây đó.",
   },
 ];
 
@@ -26,13 +26,13 @@ export default async function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="space-y-4 p-6">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">Tổng quan Phase 1</p>
-            <h2 className="mt-2 text-3xl font-bold text-foreground">Nền tảng dữ liệu và xác thực cho {userName}</h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">Tổng quan hệ thống</p>
+            <h2 className="mt-2 text-3xl font-bold text-foreground">Không gian làm việc chẩn đoán lá cây của {userName}</h2>
           </div>
 
           <p className="max-w-2xl text-sm leading-7 text-muted">
-            Dashboard này đóng vai trò kiểm tra xem auth, session, RLS và structure CRUD đã sẵn sàng để bước sang Phase 2
-            hay chưa. Khi tích hợp AI, đây sẽ là nơi người dùng upload ảnh, xem kết quả và lưu lịch sử chẩn đoán.
+            Tại đây bạn có thể theo dõi lịch sử chẩn đoán, quản lý ảnh đã tải lên và truy cập nhanh khu vực phân tích bệnh.
+            Dữ liệu được lưu tách biệt theo từng tài khoản để đảm bảo an toàn và dễ theo dõi khi cần đối chiếu kết quả.
           </p>
 
           <div className="flex flex-wrap gap-3">
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
         </Card>
 
         <Card className="space-y-3 p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">Mục tiêu phase này</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">Điểm nổi bật</p>
           <div className="space-y-3">
             {pillars.map((pillar) => (
               <article key={pillar.title} className="rounded-2xl border border-border bg-surfaceAlt p-4">
