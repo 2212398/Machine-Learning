@@ -3,6 +3,8 @@ import { Be_Vietnam_Pro } from "next/font/google";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/components/auth/logout-button";
+import { getCurrentUser } from "@/lib/supabase/server";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -15,7 +17,9 @@ export const metadata: Metadata = {
   description: "Next.js + Supabase frontend scaffold for the plant leaf disease project.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const { user } = await getCurrentUser();
+
   return (
     <html lang="vi">
       <body className={beVietnamPro.className}>
@@ -28,10 +32,21 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               </Link>
 
               <nav className="flex items-center gap-2">
-                <Button href="/sign-in" variant="ghost">
-                  Đăng nhập
-                </Button>
-                <Button href="/sign-up">Tạo tài khoản</Button>
+                {user ? (
+                  <>
+                    <Button href="/dashboard" variant="ghost">
+                      Dashboard
+                    </Button>
+                    <LogoutButton />
+                  </>
+                ) : (
+                  <>
+                    <Button href="/sign-in" variant="ghost">
+                      Đăng nhập
+                    </Button>
+                    <Button href="/sign-up">Tạo tài khoản</Button>
+                  </>
+                )}
               </nav>
             </div>
           </header>
