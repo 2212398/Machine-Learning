@@ -1,2 +1,0 @@
-This is a test file — not an image.
-Used to verify file validation in upload form.
