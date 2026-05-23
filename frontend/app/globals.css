@@ -56,18 +56,6 @@ a {
   background: rgba(47, 168, 90, 0.2);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --color-surface: #1a1a2e;
-    --color-surface-raised: #22223b;
-    --color-neutral-900: #f8f9fa;
-    --color-neutral-700: #d7dbe7;
-    --color-neutral-400: #b7b9c8;
-    --color-neutral-100: #2f3148;
-  }
-}
-
 .page-shell {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;

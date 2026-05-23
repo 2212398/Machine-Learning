@@ -260,7 +260,7 @@ export default function DiagnosisPage() {
         <Link className="text-base font-semibold text-primary" href="/dashboard">
           ← Quay lại
         </Link>
-        <span className="text-sm font-bold uppercase tracking-[0.18em] text-primary">Chẩn Đoán Cây AI</span>
+        <span className="text-sm font-bold uppercase tracking-[0.18em] text-primary">Plant Detec</span>
       </div>
 
       <header className="space-y-2 text-center">

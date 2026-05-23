@@ -11,7 +11,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Chẩn Đoán Cây AI",
+  title: "Plant Detec",
   description: "Ứng dụng AI chẩn đoán bệnh cây từ ảnh lá cây.",
 };
 
@@ -27,7 +27,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <div className="page-shell flex items-center justify-between py-4">
               <Link href="/" className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
-                  Chẩn Đoán Cây AI
+                  Plant Detec
                 </span>
               </Link>
 

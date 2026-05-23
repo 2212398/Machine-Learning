@@ -1,6 +1,6 @@
 export const vi = {
   nav: {
-    logo: "Chẩn Đoán Cây AI",
+    logo: "Plant Detec",
     signIn: "Đăng nhập",
     signUp: "Tạo tài khoản",
     signOut: "Đăng xuất",

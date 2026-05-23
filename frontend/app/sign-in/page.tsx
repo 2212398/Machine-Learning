@@ -6,7 +6,7 @@ export default function SignInPage() {
       <div className="grid overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-md lg:grid-cols-[0.95fr_1.05fr]">
         <aside className="hidden bg-gradient-to-br from-primary to-primary-light p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/80">Chẩn Đoán Cây AI</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/80">Plant Detec</p>
             <h1 className="mt-6 font-display text-4xl font-semibold leading-tight">
               Phát hiện sớm, bảo vệ mùa vụ.
             </h1>
