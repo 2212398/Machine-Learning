@@ -104,12 +104,12 @@ ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
 ls -la backend/app/models/
 
 # They should be:
-# - plant_mobilenetv3.pt
-# - disease_mobilenetv3.pt
+# - plant_efficientnet_b4.pt
+# - disease_efficientnet_b4.pt
 
 # If missing, you must copy them from your local machine:
-scp -r plant_mobilenetv3.pt root@178.128.50.119:/root/plant-disease-detection/code/backend/app/models/
-scp -r disease_mobilenetv3.pt root@178.128.50.119:/root/plant-disease-detection/code/backend/app/models/
+scp -r plant_efficientnet_b4.pt root@178.128.50.119:/root/plant-disease-detection/code/backend/app/models/
+scp -r disease_efficientnet_b4.pt root@178.128.50.119:/root/plant-disease-detection/code/backend/app/models/
 ```
 
 ## Step 8: Build and Start Docker Containers

@@ -38,6 +38,7 @@ from .config import (
     FRONTEND_DIR,
     INDEX_FILE,
     INFERENCE_MAX_CONCURRENCY,
+    IMAGE_BLUR_VARIANCE_THRESHOLD,
     MAX_IMAGE_HEIGHT,
     MAX_IMAGE_PIXELS,
     MAX_IMAGE_WIDTH,
@@ -254,6 +255,7 @@ def health():
         "max_image_width": MAX_IMAGE_WIDTH,
         "max_image_height": MAX_IMAGE_HEIGHT,
         "max_image_pixels": MAX_IMAGE_PIXELS,
+        "image_blur_variance_threshold": IMAGE_BLUR_VARIANCE_THRESHOLD,
         "step2_strict_plant_match": STEP2_STRICT_PLANT_MATCH,
         "upload_archive_enabled": UPLOAD_ARCHIVE_ENABLED,
         "upload_archive_dir": str(UPLOAD_ARCHIVE_DIR),
@@ -729,6 +731,27 @@ def _decode_image_bytes(raw_bytes: bytes) -> np.ndarray:
     return image
 
 
+def _laplacian_variance(image: np.ndarray) -> float:
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+
+def _enforce_not_blurry(image: np.ndarray) -> None:
+    threshold = float(IMAGE_BLUR_VARIANCE_THRESHOLD)
+    if threshold <= 0:
+        return
+
+    blur_score = _laplacian_variance(image)
+    if blur_score < threshold:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Anh qua mo de chan doan tin cay. "
+                f"Hay chup lai ro hon (blur_score={blur_score:.1f}, threshold={threshold:.1f})."
+            ),
+        )
+
+
 async def _decode_upload_image(file: UploadFile, flow: str, endpoint: str) -> tuple[np.ndarray, bytes]:
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Chỉ chấp nhận file ảnh (JPG/PNG)")
@@ -736,6 +759,7 @@ async def _decode_upload_image(file: UploadFile, flow: str, endpoint: str) -> tu
     raw_bytes = await _read_upload_bytes_with_limit(file)
     try:
         image = await asyncio.to_thread(_decode_image_bytes, raw_bytes)
+        await asyncio.to_thread(_enforce_not_blurry, image)
     except HTTPException as exc:
         _archive_with_metadata(
             flow=flow,
@@ -760,6 +784,7 @@ async def _decode_upload_image(file: UploadFile, flow: str, endpoint: str) -> tu
 
 def _run_step2_single_image(*, raw_bytes: bytes, resolved_plant: str) -> dict[str, Any]:
     image = _decode_image_bytes(raw_bytes)
+    _enforce_not_blurry(image)
 
     processed_image, leaf_found = extract_leaf_region(image)
     if not leaf_found:
@@ -839,6 +864,9 @@ def _run_step2_single_image(*, raw_bytes: bytes, resolved_plant: str) -> dict[st
 
     disease_label = str(pred.get("disease_label", f"{resolved_plant}___unknown_disease"))
     disease_conf = float(pred.get("disease_confidence", 0.0))
+    disease_top_candidates = pred.get("disease_top_candidates", [])
+    if not isinstance(disease_top_candidates, list):
+        disease_top_candidates = []
     inconsistent = bool(pred.get("inconsistent", False))
     allowed_count = int(pred.get("step2_allowed_classes", 0) or 0)
 
@@ -860,6 +888,7 @@ def _run_step2_single_image(*, raw_bytes: bytes, resolved_plant: str) -> dict[st
         "message": img_message,
         "disease_label": disease_label,
         "disease_confidence": round(disease_conf, 4),
+        "disease_top_candidates": disease_top_candidates,
         "inconsistent": inconsistent,
         "skipped": False,
         "plant_mismatch": False,
@@ -1063,6 +1092,7 @@ async def step2_disease(
     per_image_results: list[Step2ImageResult] = []
     score_by_label: dict[str, float] = {}
     conf_by_label: dict[str, list[float]] = {}
+    candidate_conf_by_label: dict[str, list[float]] = {}
 
     allowed_count = 0
     successful_images = 0
@@ -1196,6 +1226,9 @@ async def step2_disease(
         leaf_detected = bool(result.get("leaf_detected", False))
         disease_label = str(result.get("disease_label", f"{resolved_plant}___unknown_disease"))
         disease_conf = float(result.get("disease_confidence", 0.0) or 0.0)
+        disease_top_candidates = result.get("disease_top_candidates", [])
+        if not isinstance(disease_top_candidates, list):
+            disease_top_candidates = []
         inconsistent = bool(result.get("inconsistent", False))
         skipped = bool(result.get("skipped", False))
         plant_mismatch = bool(result.get("plant_mismatch", False))
@@ -1214,6 +1247,13 @@ async def step2_disease(
 
             score_by_label[disease_label] = score_by_label.get(disease_label, 0.0) + disease_conf
             conf_by_label.setdefault(disease_label, []).append(disease_conf)
+            for candidate in disease_top_candidates:
+                if not isinstance(candidate, dict):
+                    continue
+                candidate_label = str(candidate.get("label") or "")
+                candidate_conf = float(candidate.get("confidence") or 0.0)
+                if candidate_label:
+                    candidate_conf_by_label.setdefault(candidate_label, []).append(candidate_conf)
 
         archive_prediction: dict[str, Any] = {
             "status": status,
@@ -1249,6 +1289,7 @@ async def step2_disease(
                 message=str(img_message) if img_message else None,
                 disease_label=disease_label,
                 disease_confidence=round(disease_conf, 4),
+                disease_top_candidates=disease_top_candidates,
                 inconsistent=inconsistent,
                 skipped=skipped,
                 plant_mismatch=plant_mismatch,
@@ -1264,6 +1305,7 @@ async def step2_disease(
     if successful_images == 0:
         final_label = f"{resolved_plant}___unknown_disease"
         final_conf = 0.0
+        final_disease_top_candidates: list[dict[str, Any]] = []
         message_parts: list[str] = []
         if mismatched_plant_images > 0:
             status = "plant_mismatch_detected"
@@ -1289,6 +1331,21 @@ async def step2_disease(
         final_label = max(score_by_label.items(), key=lambda kv: kv[1])[0]
         conf_values = conf_by_label.get(final_label, [0.0])
         final_conf = float(sum(conf_values) / max(1, len(conf_values)))
+        final_disease_top_candidates = [
+            {
+                "label": label,
+                "confidence": round(sum(values) / max(1, len(values)), 4),
+                "rank": rank,
+            }
+            for rank, (label, values) in enumerate(
+                sorted(
+                    candidate_conf_by_label.items(),
+                    key=lambda kv: sum(kv[1]) / max(1, len(kv[1])),
+                    reverse=True,
+                )[:3],
+                start=1,
+            )
+        ]
 
         status = "ok"
         message_parts: list[str] = []
@@ -1330,6 +1387,7 @@ async def step2_disease(
         step2_allowed_classes=allowed_count,
         final_disease_label=final_label,
         final_disease_confidence=round(final_conf, 4),
+        final_disease_top_candidates=final_disease_top_candidates,
         recommendation=recommendation,
         recommendation_checklist=recommendation_checklist,
         status=status,
@@ -1399,6 +1457,7 @@ async def predict(request: Request, file: UploadFile = File(...)):
         plant_confidence=plant_conf,
         disease_label=disease_label,
         disease_confidence=disease_conf,
+        disease_top_candidates=pred.get("disease_top_candidates", []),
         step1_done=pred.get("step1_done", True),
         step2_done=pred.get("step2_done", True),
         step2_allowed_classes=pred.get("step2_allowed_classes", 0),

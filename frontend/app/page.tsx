@@ -1,110 +1,169 @@
-import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const highlights = [
+const leafImages = [
+  { src: "/leaf-sample-1.svg", alt: "Ảnh mẫu lá cà chua khỏe mạnh" },
+  { src: "/leaf-sample-2.svg", alt: "Ảnh mẫu lá ngô" },
+  { src: "/leaf-sample-3.svg", alt: "Ảnh mẫu lá nho" },
+  { src: "/leaf-sample-4.svg", alt: "Ảnh mẫu lá táo" },
+];
+
+const steps = [
   {
-    title: "Frontend mới bằng Next.js App Router",
-    description: "Chuẩn hóa giao diện, luồng auth và Server/Client Components để thay thế frontend HTML/JS cũ.",
+    icon: "📷",
+    number: "Bước 1",
+    title: "Chụp ảnh lá cây",
+    description: "Chụp hoặc chọn ảnh từ điện thoại.",
   },
   {
-    title: "Supabase cho Auth, Database và Storage",
-    description: "Lưu lịch sử chẩn đoán, file ảnh và quyền truy cập theo user với RLS ngay từ Phase 1.",
+    icon: "🤖",
+    number: "Bước 2",
+    title: "AI nhận diện bệnh",
+    description: "Hệ thống tự phân tích ảnh lá cây.",
   },
   {
-    title: "Giữ nguyên AI microservice FastAPI",
-    description: "Backend PyTorch + OpenCV tiếp tục là nơi suy luận plant/disease, frontend chỉ orchestration và hiển thị.",
+    icon: "✅",
+    number: "Bước 3",
+    title: "Xem hướng điều trị",
+    description: "Nhận gợi ý xử lý dễ hiểu.",
   },
 ];
 
-export default async function HomePage() {
-  // Server-side fetch from Supabase for demo todos
-  let todos: { id: string; name: string }[] | undefined = undefined;
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data } = await supabase.from("todos").select("id,name");
-    todos = (data as any) ?? undefined;
-  } catch (e) {
-    // ignore errors for demo page
-    console.warn("Could not load todos:", e);
-  }
+const plants = [
+  "🍅 Cà chua",
+  "🌾 Lúa",
+  "🌽 Ngô",
+  "🥔 Khoai tây",
+  "🍇 Nho",
+  "🍎 Táo",
+  "Ớt",
+  "🍑 Đào",
+  "Việt quất",
+  "🍓 Dâu tây",
+  "Đậu nành",
+  "☕ Cà phê",
+];
+
+const reasons = [
+  "✅ Kết quả trong 5 giây",
+  "📱 Dùng được trên điện thoại",
+  "Miễn phí",
+];
+
+export default function HomePage() {
   return (
-    <section className="page-shell space-y-8">
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
-        <div className="space-y-6 rounded-[2rem] border border-border bg-surface/90 p-8 shadow-soft">
-          <span className="inline-flex rounded-full bg-brand-50 px-4 py-1.5 text-sm font-semibold text-brand-700">
-            Phase 1 - Migrate & Setup
-          </span>
+    <div className="bg-[#1e2235] text-white">
+      <section className="hero-fade-in">
+        <div className="page-shell grid min-h-[calc(100vh-96px)] gap-10 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div className="space-y-7">
+            <div className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-base font-semibold text-white">
+              🌿 Miễn phí · Dễ dùng
+            </div>
 
-          <div className="space-y-4">
-            <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              Hệ thống nhận diện bệnh trên lá cây, được chuẩn hóa để phát triển theo kiến trúc thật.
-            </h1>
-            <p className="max-w-2xl text-base leading-8 text-muted sm:text-lg">
-              Bản Next.js này là nền tảng mới cho giao diện người dùng, xác thực, lịch sử chẩn đoán và tích hợp Supabase.
-              AI inference vẫn nằm ở FastAPI để giữ đúng ranh giới trách nhiệm giữa UI và machine learning.
-            </p>
+            <div className="space-y-5">
+              <h1 className="font-display text-[clamp(34px,5vw,56px)] font-semibold leading-tight text-white">
+                Phát hiện bệnh cây chỉ từ 1 tấm ảnh
+              </h1>
+              <p className="max-w-2xl text-[20px] leading-[1.7] text-white/85 sm:text-lg">
+                Chụp ảnh lá cây → AI nhận diện bệnh → Nhận hướng điều trị.
+                Không cần kiến thức kỹ thuật.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button className="min-h-[56px] w-full text-lg sm:w-auto" href="/dashboard/diagnosis" size="lg">
+                📷 Chẩn đoán ngay
+              </Button>
+              <Button
+                className="min-h-[56px] w-full border-white/70 text-lg text-white hover:bg-white/10 sm:w-auto"
+                href="#cach-dung"
+                size="lg"
+                variant="outline"
+              >
+                Xem cách dùng ↓
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button href="/sign-up">Bắt đầu với tài khoản mới</Button>
-            <Button href="/sign-in" variant="secondary">
-              Đăng nhập để tiếp tục
-            </Button>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Card className="p-4">
-              <p className="text-sm font-semibold text-brand-700">Next.js</p>
-              <p className="mt-2 text-sm text-muted">App Router, Server Components và Client Components</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-sm font-semibold text-brand-700">Supabase</p>
-              <p className="mt-2 text-sm text-muted">Auth, Database CRUD, RLS, Storage</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-sm font-semibold text-brand-700">FastAPI</p>
-              <p className="mt-2 text-sm text-muted">Microservice AI với OpenCV + PyTorch</p>
-            </Card>
+          <div className="grid grid-cols-2 gap-4">
+            {leafImages.map((image, index) => (
+              <div
+                className="overflow-hidden rounded-lg border border-white bg-white p-2 shadow-md odd:translate-y-6"
+                key={image.src}
+              >
+                <Image
+                  alt={image.alt}
+                  className="aspect-[4/3] rounded-md object-cover"
+                  height={240}
+                  priority={index === 0}
+                  src={image.src}
+                  width={320}
+                />
+              </div>
+            ))}
           </div>
         </div>
+      </section>
 
-        <Card className="space-y-4 p-6">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">Trạng thái Phase 1</p>
-            <h2 className="mt-2 text-2xl font-bold text-foreground">Nền tảng sẵn sàng để phát triển tiếp</h2>
-          </div>
-
-          <div className="space-y-4">
-            {highlights.map((item) => (
-              <article key={item.title} className="rounded-2xl border border-border bg-surfaceAlt p-4">
-                <h3 className="text-base font-semibold text-foreground">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted">{item.description}</p>
+      <section className="bg-surface-raised py-14 text-neutral-900" id="cach-dung">
+        <div className="page-shell space-y-8">
+          <h2 className="font-display text-3xl font-semibold">3 bước đơn giản</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {steps.map((step) => (
+              <article className="rounded-lg border border-neutral-100 bg-white p-6 shadow-sm" key={step.title}>
+                <div className="text-[64px] leading-none">{step.icon}</div>
+                <p className="mt-5 text-sm font-semibold text-neutral-400">{step.number}</p>
+                <h3 className="mt-2 text-xl font-bold text-neutral-900">{step.title}</h3>
+                <p className="mt-2 text-base leading-7 text-neutral-600">{step.description}</p>
               </article>
             ))}
           </div>
+        </div>
+      </section>
 
-          <div className="rounded-2xl border border-brand-100 bg-brand-50 p-4 text-sm leading-6 text-brand-800">
-            Ở giai đoạn tiếp theo, phần upload ảnh sẽ đi qua Supabase Storage trước khi request được gửi sang FastAPI.
+      <section className="bg-white py-14 text-neutral-900">
+        <div className="page-shell space-y-8">
+          <h2 className="font-display text-3xl font-semibold">Nhận diện được 14 loại cây phổ biến</h2>
+          <div className="flex flex-wrap gap-3">
+            {plants.map((plant) => (
+              <span
+                className="rounded-full border border-primary-pale bg-primary-pale/50 px-4 py-2 text-base font-semibold text-primary"
+                key={plant}
+              >
+                {plant}
+              </span>
+            ))}
           </div>
+        </div>
+      </section>
 
-          <Link className="text-sm font-semibold text-brand-700 underline-offset-4 hover:underline" href="/sign-in">
-            Đi tới màn hình đăng nhập
-          </Link>
-        
-          <div className="mt-4">
-            <h3 className="text-sm font-semibold text-foreground">Demo: Todos (server-side)</h3>
-            <ul className="mt-2 list-disc pl-5 text-sm">
-              {todos && todos.length > 0 ? (
-                todos.map((todo) => <li key={todo.id}>{todo.name}</li>)
-              ) : (
-                <li className="text-muted">No todos available</li>
-              )}
-            </ul>
+      <section className="bg-surface-raised py-14 text-neutral-900">
+        <div className="page-shell space-y-8">
+          <h2 className="font-display text-3xl font-semibold">Tại sao dùng app này?</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {reasons.map((reason) => (
+              <div className="rounded-lg border border-neutral-100 bg-white p-6 text-xl font-bold shadow-sm" key={reason}>
+                {reason}
+              </div>
+            ))}
           </div>
-        </Card>
+        </div>
+      </section>
+
+      <section className="bg-primary py-14 text-white">
+        <div className="page-shell flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="font-display text-3xl font-semibold">Thử ngay, hoàn toàn miễn phí</h2>
+          <Button className="min-h-[56px] w-full bg-white text-lg text-primary hover:bg-white/90 sm:w-auto" href="/dashboard/diagnosis" size="lg">
+            Bắt đầu chẩn đoán
+          </Button>
+        </div>
+      </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#1e2235]/95 p-3 sm:hidden">
+        <Button className="min-h-[56px] w-full text-lg" href="/dashboard/diagnosis" size="lg">
+          📷 Chẩn đoán ngay
+        </Button>
       </div>
-    </section>
+    </div>
   );
 }

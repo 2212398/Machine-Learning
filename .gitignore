@@ -15,6 +15,14 @@ env/
 # Local training exports
 training/exports/
 training/retraining_exports/
+training/smoke_outputs/
+
+# External raw datasets live outside code/ but may be accessed from this repo.
+../PlantDisease/_raw_downloads/*
+!../PlantDisease/_raw_downloads/README.md
+!../PlantDisease/_raw_downloads/*/
+../PlantDisease/_raw_downloads/*/*
+!../PlantDisease/_raw_downloads/*/.gitkeep
 
 # Runtime datalake payload (keep README + local ignore files)
 backend/app/upload_archive/raw/

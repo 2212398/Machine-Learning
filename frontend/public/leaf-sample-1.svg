@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" role="img" aria-label="Healthy tomato leaf sample">
+  <rect width="640" height="480" fill="#e9f7ef"/>
+  <path d="M320 420C210 360 150 258 170 160c90 12 155 82 150 260Z" fill="#2d6a4f"/>
+  <path d="M320 420c84-80 116-182 76-292-78 34-108 122-76 292Z" fill="#52b788"/>
+  <path d="M320 420c-4-100 10-188 48-280" stroke="#f8f9fa" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="160" cy="120" r="46" fill="#d8f3dc"/>
+</svg>

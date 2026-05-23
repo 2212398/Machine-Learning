@@ -7,11 +7,18 @@ class RecommendationChecklist(BaseModel):
     consult: list[str] = Field(default_factory=list)
 
 
+class DiseaseCandidate(BaseModel):
+    label: str
+    confidence: float
+    rank: int
+
+
 class PredictResponse(BaseModel):
     plant_label: str
     plant_confidence: float
     disease_label: str
     disease_confidence: float
+    disease_top_candidates: list[DiseaseCandidate] = Field(default_factory=list)
     step1_done: bool = True
     step2_done: bool = True
     step2_allowed_classes: int = 0
@@ -27,6 +34,7 @@ class PredictResponse(BaseModel):
 class PlantCandidate(BaseModel):
     label: str
     confidence: float
+    rank: int | None = None
 
 
 class Step1PlantResponse(BaseModel):
@@ -39,7 +47,7 @@ class Step1PlantResponse(BaseModel):
     can_confirm: bool = False
     too_many_leaves: bool = False
     leaf_candidate_count: int = 0
-    top_candidates: list[PlantCandidate] = []
+    top_candidates: list[PlantCandidate] = Field(default_factory=list)
     step2_access_token: str | None = None
     step2_access_expires_in_sec: int | None = None
     status: str
@@ -55,6 +63,7 @@ class Step2ImageResult(BaseModel):
     message: str | None = None
     disease_label: str
     disease_confidence: float
+    disease_top_candidates: list[DiseaseCandidate] = Field(default_factory=list)
     inconsistent: bool = False
     skipped: bool = False
     plant_mismatch: bool = False
@@ -74,6 +83,7 @@ class Step2DiseaseResponse(BaseModel):
     step2_allowed_classes: int
     final_disease_label: str
     final_disease_confidence: float
+    final_disease_top_candidates: list[DiseaseCandidate] = Field(default_factory=list)
     recommendation: str
     recommendation_checklist: RecommendationChecklist | None = None
     status: str

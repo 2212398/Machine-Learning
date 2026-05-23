@@ -50,3 +50,17 @@ export async function recordFeedback(
     return { success: false, error: "Lỗi không mong muốn" };
   }
 }
+
+export async function submitFeedback(
+  diagnosisId: string,
+  isCorrect: boolean,
+  correctPlant?: string,
+  correctDisease?: string
+): Promise<{ success: boolean; error?: string }> {
+  const note =
+    !isCorrect && (correctPlant || correctDisease)
+      ? JSON.stringify({ correctPlant: correctPlant || null, correctDisease: correctDisease || null })
+      : undefined;
+
+  return recordFeedback(diagnosisId, isCorrect, note);
+}

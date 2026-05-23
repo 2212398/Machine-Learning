@@ -14,8 +14,10 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       RECOMMENDATION_PATH: /app/backend/app/labels/recommendations_vi.json
-      PLANT_MODEL_PATH: /app/backend/app/models/plant_mobilenetv3.pt
-      DISEASE_MODEL_PATH: /app/backend/app/models/disease_mobilenetv3.pt
+      PLANT_MODEL_PATH: /app/backend/app/models/plant_efficientnet_b4.pt
+      DISEASE_MODEL_PATH: /app/backend/app/models/disease_efficientnet_b4.pt
+      PLANT_BACKBONE: efficientnet_b4
+      DISEASE_BACKBONE: efficientnet_b4
     volumes:
       - ./backend/app/models:/app/backend/app/models:ro
       - ./backend/app/labels:/app/backend/app/labels:ro
@@ -30,15 +32,31 @@ services:
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        NEXT_PUBLIC_FASTAPI_URL: ${NEXT_PUBLIC_FASTAPI_URL:-http://backend:8000}
-    expose:
-      - "3000"
+        NEXT_PUBLIC_FASTAPI_URL: http://backend:8000
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    container_name: plantleaf_frontend
+    ports:
+      - "3000:3000"
     environment:
-      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      NEXT_PUBLIC_FASTAPI_URL: ${NEXT_PUBLIC_FASTAPI_URL:-http://backend:8000}
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - default
+      - app_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   nginx:
@@ -72,3 +90,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:rw
     entrypoint: ["/bin/sh", "-c", "trap exit TERM; while :; do certbot renew --webroot --webroot-path=/var/www/certbot || true; sleep 43200; done"]
     restart: unless-stopped
+
+networks:
+  app_network:
+    driver: bridge

@@ -18,6 +18,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
   const [step1, setStep1] = useState<Step1PlantResponse | null>(null);
   const [selectedPlant, setSelectedPlant] = useState<string>("");
   const [selectedPlantConfidence, setSelectedPlantConfidence] = useState<number>(0);
+  const maxUploadBytes = 10 * 1024 * 1024;
 
   const resetFlowState = () => {
     setStep1(null);
@@ -34,41 +35,42 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
     e.currentTarget.classList.remove("border-brand-500", "bg-brand-50");
   };
 
+  const readSelectedImage = (selectedFile: File) => {
+    if (!selectedFile.type.startsWith("image/")) {
+      setError("Chi ho tro file anh (JPEG, PNG, WebP, etc.)");
+      return;
+    }
+
+    if (selectedFile.size > maxUploadBytes) {
+      setError("Anh qua lon (toi da 10MB)");
+      return;
+    }
+
+    setFile(selectedFile);
+    resetFlowState();
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(selectedFile);
+    setError("");
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.currentTarget.classList.remove("border-brand-500", "bg-brand-50");
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      const droppedFile = files[0];
-      if (droppedFile.type.startsWith("image/")) {
-        setFile(droppedFile);
-        resetFlowState();
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setPreview(event.target?.result as string);
-        };
-        reader.readAsDataURL(droppedFile);
-        setError("");
-      } else {
-        setError("Chỉ hỗ trợ file ảnh (JPEG, PNG, WebP, etc.)");
-      }
+      readSelectedImage(files[0]);
+      return;
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type.startsWith("image/")) {
-      setFile(selectedFile);
-      resetFlowState();
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreview(event.target?.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
-      setError("");
-    } else if (selectedFile) {
-      setError("Chỉ hỗ trợ file ảnh (JPEG, PNG, WebP, etc.)");
+    if (selectedFile) {
+      readSelectedImage(selectedFile);
     }
   };
 
@@ -185,7 +187,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
                 <p className="mt-4 text-sm font-medium">
                   Kéo thả ảnh lá cây, hoặc click để chọn file
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-sm sm:text-xs text-muted-foreground">
                   Hỗ trợ: JPEG, PNG, WebP
                 </p>
               </div>
@@ -195,6 +197,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
             <input
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={handleFileSelect}
               className="hidden"
               id="file-input"
@@ -247,7 +250,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
               )}
 
               {step1.step2_access_expires_in_sec ? (
-                <p className="mt-3 text-xs text-muted-foreground">
+                <p className="mt-3 text-sm sm:text-xs text-muted-foreground">
                   Token Bước 2 hết hạn sau khoảng {step1.step2_access_expires_in_sec}s.
                 </p>
               ) : null}
@@ -260,6 +263,15 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
               {error}
             </div>
           )}
+
+          {loading ? (
+            <div className="space-y-4 rounded-2xl border border-border bg-surfaceAlt p-4 animate-pulse">
+              <div className="h-5 w-1/3 rounded bg-border" />
+              <div className="h-4 w-2/3 rounded bg-border" />
+              <div className="h-2 w-full rounded bg-border" />
+              <div className="h-24 rounded-xl bg-border" />
+            </div>
+          ) : null}
 
           {/* Submit button */}
           <div className="flex gap-3">

@@ -2,9 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type AuthMode = "sign-in" | "sign-up";
 
@@ -62,8 +62,8 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       router.refresh();
       router.push("/dashboard");
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Đã xảy ra lỗi xác thực.");
+    } catch {
+      setError("Đã xảy ra lỗi xác thực. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="you@example.com"
+          placeholder="email@example.com"
           autoComplete="email"
           required
         />

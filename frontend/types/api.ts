@@ -19,6 +19,13 @@ export interface FastAPIResponse {
 export interface PlantCandidate {
   label: string;
   confidence: number;
+  rank?: number | null;
+}
+
+export interface DiseaseCandidate {
+  label: string;
+  confidence: number;
+  rank: number;
 }
 
 export interface Step1PlantResponse {
@@ -48,6 +55,7 @@ export interface Step2DiseaseResponse {
   failed_images: number;
   final_disease_label: string;
   final_disease_confidence: number;
+  final_disease_top_candidates?: DiseaseCandidate[];
   recommendation?: string;
   status: string;
   message?: string | null;
@@ -60,6 +68,8 @@ export interface DiagnosisResult {
   plant_confidence: number;
   disease_label: string;
   disease_confidence: number;
+  disease_top_candidates?: DiseaseCandidate[];
+  recommendation?: string | null;
   image_url: string;
   created_at: string;
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { DiagnosisResult, Step1PlantResponse, Step2DiseaseResponse } from "@/types/api";
+import type { DiagnosisResult, DiseaseCandidate, Step1PlantResponse, Step2DiseaseResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 
 // Narrow DB row types for safer supabase typings
@@ -106,6 +106,7 @@ async function _persistDiagnosis(params: {
   plantConfidence: number;
   diseaseLabel: string;
   diseaseConfidence: number;
+  diseaseTopCandidates?: DiseaseCandidate[];
   status: string;
   recommendation?: string | null;
 }): Promise<{ data?: DiagnosisResult; error?: string }> {
@@ -179,6 +180,8 @@ async function _persistDiagnosis(params: {
       plant_confidence: diagnosisRow.plant_confidence ?? 0,
       disease_label: diagnosisRow.disease_label ?? "",
       disease_confidence: diagnosisRow.disease_confidence ?? 0,
+      disease_top_candidates: params.diseaseTopCandidates ?? [],
+      recommendation: params.recommendation ?? null,
       image_url: diagnosisRow.image_url ?? "",
       created_at: diagnosisRow.created_at,
     },
@@ -264,6 +267,7 @@ export async function uploadAndDiagnose(
       plantConfidence: _clamp01(_toNumber(step1.plant_confidence, 0)),
       diseaseLabel: step2.final_disease_label,
       diseaseConfidence: _clamp01(_toNumber(step2.final_disease_confidence, 0)),
+      diseaseTopCandidates: step2.final_disease_top_candidates ?? [],
       status: step2.status || "completed",
       recommendation: step2.recommendation ?? null,
     });
@@ -273,6 +277,12 @@ export async function uploadAndDiagnose(
       error: "Lỗi không mong muốn khi xử lý ảnh",
     };
   }
+}
+
+export async function uploadDiagnosis(
+  formData: FormData
+): Promise<{ data?: DiagnosisResult; step1?: Step1PlantResponse; error?: string }> {
+  return uploadAndDiagnose(formData);
 }
 
 export async function confirmAndDiagnose(
@@ -327,6 +337,7 @@ export async function confirmAndDiagnose(
       plantConfidence,
       diseaseLabel: step2.final_disease_label,
       diseaseConfidence: _clamp01(_toNumber(step2.final_disease_confidence, 0)),
+      diseaseTopCandidates: step2.final_disease_top_candidates ?? [],
       status: step2.status || "completed",
       recommendation: step2.recommendation ?? null,
     });

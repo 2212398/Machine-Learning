@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" role="img" aria-label="Grape leaf sample">
+  <rect width="640" height="480" fill="#eef6ff"/>
+  <path d="M318 86 402 214l142 14-106 92 34 132-154-70-154 70 34-132-106-92 142-14Z" fill="#2d6a4f"/>
+  <path d="M318 100v280M198 258l240 62M438 258l-240 62" stroke="#d8f3dc" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="156" cy="132" r="38" fill="#52b788"/>
+</svg>

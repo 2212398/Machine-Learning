@@ -3,8 +3,163 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { recordFeedback } from "@/lib/actions/feedback";
 import type { DiagnosisResult } from "@/types/api";
+
+type Severity = "healthy" | "mild" | "severe" | "unknown";
+
+export interface ResultCardProps {
+  plantName: string;
+  plantNameVi?: string;
+  plantConfidence: number;
+  diseaseName: string;
+  diseaseNameVi?: string;
+  diseaseConfidence: number;
+  severity: Severity;
+  recommendation: string;
+  isLoading?: boolean;
+  onFeedback?: (isCorrect: boolean) => void;
+  className?: string;
+}
+
+const severityMeta: Record<Severity, { label: string; icon: string; variant: BadgeVariant }> = {
+  healthy: { label: "Khỏe mạnh", icon: "🌱", variant: "healthy" },
+  mild: { label: "Có bệnh - Nhẹ", icon: "⚠️", variant: "mild" },
+  severe: { label: "Có bệnh - Nghiêm trọng", icon: "🚨", variant: "severe" },
+  unknown: { label: "Không xác định", icon: "?", variant: "unknown" },
+};
+
+function clampConfidence(value: number) {
+  return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+}
+
+function confidenceColor(value: number) {
+  if (value >= 0.8) {
+    return "bg-success";
+  }
+  if (value >= 0.6) {
+    return "bg-warning";
+  }
+  return "bg-danger";
+}
+
+function ConfidenceBar({ label, value }: { label: string; value: number }) {
+  const [animatedValue, setAnimatedValue] = useState(0);
+  const safeValue = clampConfidence(value);
+  const percent = safeValue * 100;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setAnimatedValue(percent), 80);
+    return () => window.clearTimeout(timer);
+  }, [percent]);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-4 text-sm">
+        <span className="font-medium text-neutral-700">{label}</span>
+        <span className="font-semibold text-neutral-900">{percent.toFixed(1)}%</span>
+      </div>
+      <div
+        aria-label={`${label}: ${Math.round(percent)}%`}
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={Math.round(percent)}
+        className="h-2 overflow-hidden rounded-full bg-neutral-100"
+        role="progressbar"
+      >
+        <div
+          className={`${confidenceColor(safeValue)} h-full rounded-full transition-all duration-700 ease-out`}
+          style={{ width: `${animatedValue}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ResultSkeleton() {
+  return (
+    <Card className="space-y-5 p-6">
+      <div className="h-6 w-1/3 animate-pulse rounded-full bg-neutral-100" />
+      <div className="h-8 w-2/3 animate-pulse rounded-md bg-neutral-100" />
+      <div className="h-2 w-full animate-pulse rounded-full bg-neutral-100" />
+      <div className="space-y-2">
+        <div className="h-4 w-full animate-pulse rounded bg-neutral-100" />
+        <div className="h-4 w-full animate-pulse rounded bg-neutral-100" />
+        <div className="h-4 w-4/5 animate-pulse rounded bg-neutral-100" />
+      </div>
+    </Card>
+  );
+}
+
+export function ResultCard({
+  plantName,
+  plantNameVi,
+  plantConfidence,
+  diseaseName,
+  diseaseNameVi,
+  diseaseConfidence,
+  severity,
+  recommendation,
+  isLoading = false,
+  onFeedback,
+  className,
+}: ResultCardProps) {
+  if (isLoading) {
+    return <ResultSkeleton />;
+  }
+
+  const meta = severityMeta[severity];
+  const recommendationText =
+    severity === "healthy"
+      ? "Cây trồng đang phát triển tốt! Tiếp tục chăm sóc như hiện tại."
+      : recommendation;
+
+  return (
+    <Card className={`space-y-6 p-6 ${className || ""}`} data-testid="result-card">
+      <header className="space-y-3">
+        <Badge aria-label={`Severity: ${meta.label}`} data-testid="severity-badge" icon={meta.icon} variant={meta.variant}>
+          {meta.label}
+        </Badge>
+        <div>
+          <h2 className="font-display text-xl font-semibold text-neutral-900">
+            {plantNameVi || plantName}
+          </h2>
+          <h3 className="mt-1 text-base text-neutral-700">{diseaseNameVi || diseaseName}</h3>
+        </div>
+      </header>
+
+      <section className="space-y-4">
+        <ConfidenceBar label="Nhận diện cây" value={plantConfidence} />
+        <ConfidenceBar label="Nhận diện bệnh" value={diseaseConfidence} />
+      </section>
+
+      <section
+        aria-live="polite"
+        className="rounded-lg border border-primary-pale bg-primary-pale/50 p-4"
+      >
+        <h4 className="flex items-center gap-2 font-semibold text-primary">
+          <span aria-hidden="true">🌿</span>
+          Khuyến nghị điều trị
+        </h4>
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+          {recommendationText || "Chưa có khuyến nghị phù hợp cho kết quả này."}
+        </p>
+      </section>
+
+      {onFeedback ? (
+        <footer className="flex flex-wrap gap-2 border-t border-neutral-100 pt-4">
+          <Button onClick={() => onFeedback(true)} size="sm" type="button" variant="ghost">
+            👍 Đúng
+          </Button>
+          <Button onClick={() => onFeedback(false)} size="sm" type="button" variant="ghost">
+            👎 Sai - Báo lỗi
+          </Button>
+        </footer>
+      ) : null}
+    </Card>
+  );
+}
 
 interface DiagnosisResultProps {
   result: DiagnosisResult;
@@ -36,6 +191,9 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
   const diseaseConfidencePercent = Math.round(
     result.disease_confidence * 100
   );
+  const diseaseCandidates = Array.isArray(result.disease_top_candidates)
+    ? result.disease_top_candidates.slice(0, 3)
+    : [];
 
   const handleFeedback = async (isCorrect: boolean) => {
     setLoading(true);
@@ -120,7 +278,14 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
                   {plantConfidencePercent}%
                 </span>
               </div>
-              <div className="w-full bg-border rounded-full h-2 overflow-hidden">
+              <div
+                aria-label={`Plant confidence: ${plantConfidencePercent}%`}
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={plantConfidencePercent}
+                className="w-full bg-border rounded-full h-2 overflow-hidden"
+                role="progressbar"
+              >
                 <div
                   className="bg-gradient-to-r from-brand-400 to-brand-600 h-full rounded-full transition-all"
                   style={{ width: `${plantConfidencePercent}%` }}
@@ -146,7 +311,14 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
                   {diseaseConfidencePercent}%
                 </span>
               </div>
-              <div className="w-full bg-border rounded-full h-2 overflow-hidden">
+              <div
+                aria-label={`Disease confidence: ${diseaseConfidencePercent}%`}
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={diseaseConfidencePercent}
+                className="w-full bg-border rounded-full h-2 overflow-hidden"
+                role="progressbar"
+              >
                 <div
                   className="bg-gradient-to-r from-brand-400 to-brand-600 h-full rounded-full transition-all"
                   style={{ width: `${diseaseConfidencePercent}%` }}
@@ -155,6 +327,48 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
             </div>
           </div>
         </div>
+
+        {diseaseCandidates.length > 0 ? (
+          <div className="rounded-xl border border-border bg-surfaceAlt p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-surface-dark">Top 3 kha nang benh</p>
+                <p className="mt-1 text-sm sm:text-xs text-muted-foreground">
+                  Cac ket qua gan nhat de doi chieu khi trieu chung chua ro.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {diseaseCandidates.map((candidate, index) => {
+                const percent = Math.round((candidate.confidence || 0) * 100);
+                return (
+                  <div key={`${candidate.label}-${candidate.rank ?? index}`} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium text-foreground">
+                        #{candidate.rank ?? index + 1} {candidate.label}
+                      </span>
+                      <span className="text-muted-foreground">{percent}%</span>
+                    </div>
+                    <div
+                      aria-label={`${candidate.label}: ${percent}%`}
+                      aria-valuemax={100}
+                      aria-valuemin={0}
+                      aria-valuenow={percent}
+                      className="h-2 overflow-hidden rounded-full bg-border"
+                      role="progressbar"
+                    >
+                      <div
+                        className="h-full rounded-full bg-brand-500 transition-all"
+                        style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         {/* Recommendation section (Phase 3) */}
         <div className="p-4 border border-brand-200 bg-brand-50 rounded-xl">

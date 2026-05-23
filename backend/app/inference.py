@@ -37,8 +37,10 @@ class PlantDiseasePredictor:
         self.plant_model_path = plant_model_path
         self.disease_model_path = disease_model_path
 
-        self.plant_backbone = plant_backbone if plant_backbone in {"small", "large"} else "large"
-        self.disease_backbone = disease_backbone if disease_backbone in {"small", "large"} else "large"
+        self.plant_backbone = self._resolve_backbone(plant_backbone)
+        self.disease_backbone = self._resolve_backbone(disease_backbone)
+        self.plant_image_size = self._backbone_image_size(self.plant_backbone)
+        self.disease_image_size = self._backbone_image_size(self.disease_backbone)
 
         self.plant_labels = self._load_json_list(plant_labels_path, default=[])
         self.disease_labels = self._load_json_list(disease_labels_path, default=[])
@@ -77,11 +79,29 @@ class PlantDiseasePredictor:
             return "cuda" if torch.cuda.is_available() else "cpu"
         return "cuda" if torch.cuda.is_available() else "cpu"
 
+    def _resolve_backbone(self, requested: str) -> str:
+        value = str(requested or "").strip().lower()
+        if value in {"small", "mobilenet_v3_small"}:
+            return "small"
+        if value in {"large", "mobilenet_v3_large"}:
+            return "large"
+        if value in {"efficientnet_b4", "b4"}:
+            return "efficientnet_b4"
+        LOGGER.warning("Unsupported backbone %r; falling back to efficientnet_b4", requested)
+        return "efficientnet_b4"
+
+    def _backbone_image_size(self, backbone: str) -> int:
+        return 380 if backbone == "efficientnet_b4" else 224
+
     def _build_classifier(self, backbone: str, num_classes: int):
         if backbone == "small":
             model = models.mobilenet_v3_small(weights=None)
-        else:
+        elif backbone == "large":
             model = models.mobilenet_v3_large(weights=None)
+        elif backbone == "efficientnet_b4":
+            model = models.efficientnet_b4(weights=None)
+        else:
+            raise ValueError(f"Unsupported backbone: {backbone}")
 
         in_features = model.classifier[-1].in_features
         model.classifier[-1] = nn.Linear(in_features, num_classes)
@@ -231,13 +251,14 @@ class PlantDiseasePredictor:
 
         return merged
 
-    def _prepare_tensor(self, image: np.ndarray) -> torch.Tensor:
+    def _prepare_tensor(self, image: np.ndarray, image_size: int) -> torch.Tensor:
         height, width = image.shape[:2]
-        if width > 224 or height > 224:
+        size = int(image_size)
+        if width > size or height > size:
             interp = cv2.INTER_AREA
         else:
             interp = cv2.INTER_LINEAR
-        resized = cv2.resize(image, (224, 224), interpolation=interp)
+        resized = cv2.resize(image, (size, size), interpolation=interp)
         rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
         arr = rgb.astype(np.float32) / 255.0
         arr = (arr - IMAGENET_MEAN) / IMAGENET_STD
@@ -302,22 +323,31 @@ class PlantDiseasePredictor:
             "inference_mode": "two_step",
         }
 
-    def _build_top_candidates(self, probs: np.ndarray, top_k: int = 3) -> list[dict[str, float | str]]:
+    def _build_label_candidates(
+        self,
+        probs: np.ndarray,
+        labels: list[str],
+        top_k: int = 3,
+    ) -> list[dict[str, float | int | str]]:
         if probs.size == 0:
             return []
 
         top_indices = np.argsort(-probs)[:top_k]
-        candidates: list[dict[str, float | str]] = []
-        for idx in top_indices:
-            if idx >= len(self.plant_labels):
+        candidates: list[dict[str, float | int | str]] = []
+        for rank, idx in enumerate(top_indices, start=1):
+            if idx >= len(labels):
                 continue
             candidates.append(
                 {
-                    "label": self.plant_labels[int(idx)],
+                    "label": labels[int(idx)],
                     "confidence": round(float(probs[int(idx)]), 4),
+                    "rank": rank,
                 }
             )
         return candidates
+
+    def _build_top_candidates(self, probs: np.ndarray, top_k: int = 3) -> list[dict[str, float | int | str]]:
+        return self._build_label_candidates(probs=probs, labels=self.plant_labels, top_k=top_k)
 
     def inspect_plant(self, image: np.ndarray, top_k: int = 3) -> dict[str, Any]:
         """Run the plant model and return raw top-1 label/confidence.
@@ -336,7 +366,7 @@ class PlantDiseasePredictor:
                 "top_candidates": [],
             }
 
-        tensor = self._prepare_tensor(image)
+        tensor = self._prepare_tensor(image, image_size=self.plant_image_size)
 
         with torch.no_grad():
             plant_out = self.plant_model(tensor)
@@ -487,7 +517,7 @@ class PlantDiseasePredictor:
                 "inference_mode": "two_step",
             }
 
-        tensor = self._prepare_tensor(image)
+        tensor = self._prepare_tensor(image, image_size=self.disease_image_size)
 
         # Step 2 runs only after caller has already determined plant label.
         with torch.no_grad():
@@ -509,6 +539,11 @@ class PlantDiseasePredictor:
         allowed_indices = [self.disease_to_idx[label] for label in allowed_labels]
         allowed_logits = disease_logits_np[allowed_indices]
         allowed_probs = self._softmax_numpy(allowed_logits.astype(np.float32))
+        disease_top_candidates = self._build_label_candidates(
+            probs=allowed_probs,
+            labels=allowed_labels,
+            top_k=3,
+        )
 
         local_best_idx = int(np.argmax(allowed_probs))
         global_best_idx = allowed_indices[local_best_idx]
@@ -525,6 +560,7 @@ class PlantDiseasePredictor:
             "plant_label": resolved_plant,
             "disease_label": disease_label,
             "disease_confidence": round(disease_conf, 4),
+            "disease_top_candidates": disease_top_candidates,
             "step2_allowed_classes": len(allowed_labels),
             "inconsistent": inconsistent,
             "model_loaded": self.model_loaded,
@@ -557,6 +593,7 @@ class PlantDiseasePredictor:
             "plant_confidence": step1.get("plant_confidence", 0.0),
             "disease_label": step2.get("disease_label", f"{plant_label}___unknown_disease"),
             "disease_confidence": step2.get("disease_confidence", 0.0),
+            "disease_top_candidates": step2.get("disease_top_candidates", []),
             "step2_allowed_classes": step2.get("step2_allowed_classes", 0),
             "inconsistent": step2.get("inconsistent", False),
             "model_loaded": self.model_loaded,

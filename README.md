@@ -8,10 +8,10 @@ This project is a local web app for plant leaf analysis with a two-stage logic:
 ## Confirmed Requirements
 
 - Core AI: Python + PyTorch
-- Training: 2 models (MobileNetV3)
+- Training: 2 models (EfficientNet-B4)
   - Plant type classifier
   - Disease classifier
-- Deployment: 2 models (MobileNetV3)
+- Deployment: 2 models (EfficientNet-B4)
   - Plant inference model
   - Disease inference model
 - Image processing: OpenCV (read, resize, threshold + contour leaf extraction)
@@ -46,8 +46,8 @@ code/
   supabase/
     migrations/
   training/
-    train_plant_mobilenetv3.py
-    train_disease_mobilenetv3.py
+    train_plant_efficientnet_b4.py
+    train_disease_efficientnet_b4.py
 ```
 
 ## Quick Start
@@ -62,8 +62,8 @@ pip install -r backend/requirements.txt
 3. Put your deployed model files at:
 
 ```text
-backend/app/models/plant_mobilenetv3.pt
-backend/app/models/disease_mobilenetv3.pt
+backend/app/models/plant_efficientnet_b4.pt
+backend/app/models/disease_efficientnet_b4.pt
 ```
 
 4. Apply the Supabase migration in `code/supabase/migrations/001_phase1_init.sql`.

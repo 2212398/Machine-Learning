@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" role="img" aria-label="Apple leaf sample">
+  <rect width="640" height="480" fill="#fff7ed"/>
+  <path d="M330 420c-92-62-126-166-96-278 112 20 164 120 96 278Z" fill="#40916c"/>
+  <path d="M330 420c74-84 96-184 56-300-82 48-106 142-56 300Z" fill="#95d5b2"/>
+  <path d="M330 420c-2-92 8-180 34-272" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="456" cy="150" r="34" fill="#e63946" opacity=".75"/>
+</svg>

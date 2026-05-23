@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" role="img" aria-label="Corn leaf sample">
+  <rect width="640" height="480" fill="#f8f9fa"/>
+  <path d="M110 420c70-160 188-260 420-330-78 130-190 246-420 330Z" fill="#74c69d"/>
+  <path d="M120 420c140-120 250-210 404-328" stroke="#2d6a4f" stroke-width="10" stroke-linecap="round"/>
+  <path d="M360 148c38 38 58 88 60 150" stroke="#f4a261" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="510" cy="360" r="42" fill="#d8f3dc"/>
+</svg>

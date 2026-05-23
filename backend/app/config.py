@@ -33,11 +33,11 @@ def _to_csv_list(raw: str) -> list[str]:
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR.parent.parent
 
-PLANT_MODEL_PATH = Path(os.getenv("PLANT_MODEL_PATH", BASE_DIR / "models" / "plant_mobilenetv3.pt"))
-DISEASE_MODEL_PATH = Path(os.getenv("DISEASE_MODEL_PATH", BASE_DIR / "models" / "disease_mobilenetv3.pt"))
+PLANT_MODEL_PATH = Path(os.getenv("PLANT_MODEL_PATH", BASE_DIR / "models" / "plant_efficientnet_b4.pt"))
+DISEASE_MODEL_PATH = Path(os.getenv("DISEASE_MODEL_PATH", BASE_DIR / "models" / "disease_efficientnet_b4.pt"))
 
-PLANT_BACKBONE = os.getenv("PLANT_BACKBONE", "large").strip().lower()
-DISEASE_BACKBONE = os.getenv("DISEASE_BACKBONE", "large").strip().lower()
+PLANT_BACKBONE = os.getenv("PLANT_BACKBONE", "efficientnet_b4").strip().lower()
+DISEASE_BACKBONE = os.getenv("DISEASE_BACKBONE", "efficientnet_b4").strip().lower()
 
 PLANT_LABELS_PATH = Path(os.getenv("PLANT_LABELS_PATH", BASE_DIR / "labels" / "plant_labels.json"))
 DISEASE_LABELS_PATH = Path(os.getenv("DISEASE_LABELS_PATH", BASE_DIR / "labels" / "disease_labels_flat.json"))
@@ -99,6 +99,7 @@ TRUST_PROXY_HEADERS = _to_bool(os.getenv("TRUST_PROXY_HEADERS", "0"), default=Fa
 MAX_IMAGE_WIDTH = _to_int(os.getenv("MAX_IMAGE_WIDTH", "6000"), 6000, min_value=64)
 MAX_IMAGE_HEIGHT = _to_int(os.getenv("MAX_IMAGE_HEIGHT", "6000"), 6000, min_value=64)
 MAX_IMAGE_PIXELS = _to_int(os.getenv("MAX_IMAGE_PIXELS", str(25_000_000)), 25_000_000, min_value=64 * 64)
+IMAGE_BLUR_VARIANCE_THRESHOLD = float(os.getenv("IMAGE_BLUR_VARIANCE_THRESHOLD", "30"))
 
 # Step2 additional safety
 STEP2_STRICT_PLANT_MATCH = _to_bool(os.getenv("STEP2_STRICT_PLANT_MATCH", "1"), default=True)
