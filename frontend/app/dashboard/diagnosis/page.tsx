@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type ChangeEvent } from "react";
 import { FeedbackWidget } from "@/components/diagnosis/FeedbackWidget";
 import { Button } from "@/components/ui/button";
-import { uploadDiagnosis } from "@/lib/actions/diagnosis";
+import { confirmAndDiagnose, uploadDiagnosis } from "@/lib/actions/diagnosis";
 import { vi } from "@/lib/vi";
 import { toast } from "@/lib/toast";
-import type { DiagnosisResult } from "@/types/api";
+import type { DiagnosisResult, Step1PlantResponse } from "@/types/api";
 
-type DiagnoseState = "idle" | "uploading" | "analyzing_plant" | "analyzing_disease" | "done" | "error";
+type DiagnoseState = "idle" | "uploading" | "analyzing_plant" | "confirming_plant" | "analyzing_disease" | "done" | "error";
 
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 const maxSize = 10 * 1024 * 1024;
@@ -69,6 +69,9 @@ export default function DiagnosisPage() {
   const [state, setState] = useState<DiagnoseState>("idle");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [step1, setStep1] = useState<Step1PlantResponse | null>(null);
+  const [selectedPlant, setSelectedPlant] = useState("");
+  const [selectedPlantConfidence, setSelectedPlantConfidence] = useState(0);
   const [isPending, startTransition] = useTransition();
   const pickerRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -100,6 +103,9 @@ export default function DiagnosisPage() {
     setPreview(null);
     setResult(null);
     setError(null);
+    setStep1(null);
+    setSelectedPlant("");
+    setSelectedPlantConfidence(0);
     setState("idle");
   };
 
@@ -129,6 +135,9 @@ export default function DiagnosisPage() {
     setPreview(url);
     setResult(null);
     setError(null);
+    setStep1(null);
+    setSelectedPlant("");
+    setSelectedPlantConfidence(0);
     setState("idle");
   };
 
@@ -149,17 +158,32 @@ export default function DiagnosisPage() {
 
     startTransition(async () => {
       try {
-        window.setTimeout(() => setState("analyzing_plant"), 350);
-        window.setTimeout(() => setState("analyzing_disease"), 850);
+        const plantTimer = window.setTimeout(() => setState("analyzing_plant"), 350);
+        const diseaseTimer = window.setTimeout(() => setState("analyzing_disease"), 850);
 
         const response = await uploadDiagnosis(formData);
+        window.clearTimeout(plantTimer);
+        window.clearTimeout(diseaseTimer);
 
         if (response.error) {
           throw new Error(response.error);
         }
 
         if (response.step1 && !response.data) {
-          throw new Error(vi.diagnosis.errors.noPlant);
+          const candidates = response.step1.top_candidates ?? [];
+          if (!response.step1.can_confirm || candidates.length === 0 || !response.step1.step2_access_token) {
+            throw new Error(response.step1.message || vi.diagnosis.errors.noPlant);
+          }
+
+          const defaultCandidate =
+            candidates.find((candidate) => candidate.label === response.step1?.plant_label) ?? candidates[0];
+
+          setStep1(response.step1);
+          setSelectedPlant(defaultCandidate.label);
+          setSelectedPlantConfidence(defaultCandidate.confidence || response.step1.plant_confidence || 0);
+          setState("confirming_plant");
+          toast.success("Hãy xác nhận loại cây để tiếp tục nhận diện bệnh.");
+          return;
         }
 
         if (!response.data) {
@@ -173,6 +197,55 @@ export default function DiagnosisPage() {
         Sentry.captureException(diagnosisError, {
           tags: { component: "SimpleDiagnosisPage" },
           extra: { fileName: selectedFile.name, fileSize: selectedFile.size },
+        });
+        const message = diagnosisError instanceof Error ? diagnosisError.message : vi.diagnosis.errors.generic;
+        setError(friendlyError(message));
+        setState("error");
+      }
+    });
+  };
+
+  const continueDiagnosis = () => {
+    if (!selectedFile || !step1 || !selectedPlant || isProcessing) {
+      return;
+    }
+
+    if (!step1.step2_access_token) {
+      setError("Thiếu token cho Bước 2. Vui lòng chạy lại Bước 1.");
+      setState("error");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", selectedFile, selectedFile.name);
+    formData.append("confirmed_plant_label", selectedPlant);
+    formData.append("plant_confidence", String(selectedPlantConfidence));
+    formData.append("step2_access_token", step1.step2_access_token);
+
+    setError(null);
+    setResult(null);
+    setState("analyzing_disease");
+
+    startTransition(async () => {
+      try {
+        const response = await confirmAndDiagnose(formData);
+
+        if (response.error) {
+          throw new Error(response.error);
+        }
+
+        if (!response.data) {
+          throw new Error(vi.diagnosis.errors.generic);
+        }
+
+        setStep1(null);
+        setResult(response.data);
+        setState("done");
+        toast.success("Chẩn đoán hoàn tất.");
+      } catch (diagnosisError) {
+        Sentry.captureException(diagnosisError, {
+          tags: { component: "SimpleDiagnosisPage", flow: "step2-confirmed" },
+          extra: { fileName: selectedFile.name, fileSize: selectedFile.size, selectedPlant },
         });
         const message = diagnosisError instanceof Error ? diagnosisError.message : vi.diagnosis.errors.generic;
         setError(friendlyError(message));
@@ -234,10 +307,58 @@ export default function DiagnosisPage() {
         </div>
       ) : null}
 
-      {selectedFile && !isProcessing && !result ? (
+      {selectedFile && !isProcessing && !result && state !== "confirming_plant" ? (
         <div className="space-y-3">
           <Button className="min-h-[56px] w-full text-lg font-bold" onClick={startDiagnosis}>
             ✓ Bắt đầu chẩn đoán
+          </Button>
+          <Button className="w-full" onClick={reset} variant="ghost">
+            Chọn ảnh khác
+          </Button>
+        </div>
+      ) : null}
+
+      {step1 && state === "confirming_plant" ? (
+        <div className="space-y-4 rounded-2xl border border-primary/20 bg-white p-5 shadow-sm">
+          <div>
+            <h2 className="text-xl font-bold text-neutral-900">Xác nhận loại cây</h2>
+            <p className="mt-2 text-base leading-7 text-neutral-600">
+              {step1.message ||
+                "Độ tin cậy chưa đủ chắc chắn. Hãy chọn loại cây đúng để hệ thống nhận diện bệnh trong phạm vi cây đó."}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {(step1.top_candidates ?? []).map((candidate) => {
+              const isSelected = selectedPlant === candidate.label;
+              const confidence = Math.round((candidate.confidence || 0) * 100);
+
+              return (
+                <button
+                  className={
+                    "w-full rounded-xl border p-4 text-left transition-colors " +
+                    (isSelected
+                      ? "border-primary bg-primary-pale/70 text-primary"
+                      : "border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50")
+                  }
+                  key={candidate.label}
+                  onClick={() => {
+                    setSelectedPlant(candidate.label);
+                    setSelectedPlantConfidence(candidate.confidence || 0);
+                  }}
+                  type="button"
+                >
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="font-bold">{candidate.label}</span>
+                    <span className="text-sm font-semibold">{confidence}%</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <Button className="min-h-[56px] w-full text-lg font-bold" onClick={continueDiagnosis}>
+            Xác nhận & nhận diện bệnh
           </Button>
           <Button className="w-full" onClick={reset} variant="ghost">
             Chọn ảnh khác
