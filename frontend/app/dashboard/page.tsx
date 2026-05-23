@@ -9,6 +9,27 @@ import type { ActivityPoint, DiagnosisHistoryItem } from "@/types/dashboard";
 type PlantRow = { plant_label: string | null };
 type ActivityRow = { created_at: string };
 
+const plantNameVi: Record<string, string> = {
+  Potato: "Khoai tây",
+  Tomato: "Cà chua",
+  Apple: "Táo",
+  Corn: "Ngô",
+  Grape: "Nho",
+  Pepper: "Ớt chuông",
+  Peach: "Đào",
+  Strawberry: "Dâu tây",
+  Blueberry: "Việt quất",
+  Rice: "Lúa",
+  Raspberry: "Mâm xôi",
+  Soybean: "Đậu nành",
+  Squash: "Bí ngô",
+  Cherry: "Anh đào",
+};
+
+function translatePlantName(label: string) {
+  return plantNameVi[label] ?? label;
+}
+
 function daysAgo(days: number) {
   const date = new Date();
   date.setDate(date.getDate() - days);
@@ -89,7 +110,11 @@ export default async function DashboardPage() {
   const stats = [
     { icon: "📊", value: String(totalResult.count ?? 0), label: "Lần chẩn đoán" },
     { icon: "📅", value: String(weekResult.count ?? 0), label: "Tuần này" },
-    { icon: "🌿", value: modePlant((popularResult.data as PlantRow[] | null) ?? []), label: "Cây hay gặp nhất" },
+    {
+      icon: "🌿",
+      value: translatePlantName(modePlant((popularResult.data as PlantRow[] | null) ?? [])),
+      label: "Cây hay gặp nhất",
+    },
   ];
 
   return (

@@ -41,8 +41,8 @@ export function SignInForm() {
       return;
     }
 
-    router.refresh();
     router.push("/dashboard");
+    router.refresh();
   };
 
   return (

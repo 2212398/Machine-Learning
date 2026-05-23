@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Providers } from "@/app/providers";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
 import { ToastContainer } from "@/components/ui/ToastContainer";
+import { getCurrentUser } from "@/lib/supabase/server";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +16,9 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const { user } = await getCurrentUser();
+  const userLabel = user?.email || user?.user_metadata?.full_name;
+
   return (
     <html lang="vi">
       <body className="font-body">
@@ -27,10 +32,36 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               </Link>
 
               <nav className="flex items-center gap-2">
-                <Button className="min-h-[48px] px-5 text-base text-white hover:bg-white/10" href="/sign-in" variant="ghost">
-                  Đăng nhập
-                </Button>
-                <Button className="min-h-[48px] px-5 text-base" href="/sign-up">Tạo tài khoản</Button>
+                {user ? (
+                  <>
+                    {userLabel ? (
+                      <span className="hidden max-w-[220px] truncate text-sm font-semibold text-white/80 sm:block">
+                        {userLabel}
+                      </span>
+                    ) : null}
+                    <Button
+                      className="min-h-[48px] px-5 text-base text-white hover:bg-white/10"
+                      href="/dashboard"
+                      variant="ghost"
+                    >
+                      Trang chủ
+                    </Button>
+                    <LogoutButton className="min-h-[48px] px-5 text-base" />
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      className="min-h-[48px] px-5 text-base text-white hover:bg-white/10"
+                      href="/sign-in"
+                      variant="ghost"
+                    >
+                      Đăng nhập
+                    </Button>
+                    <Button className="min-h-[48px] px-5 text-base" href="/sign-up">
+                      Tạo tài khoản
+                    </Button>
+                  </>
+                )}
               </nav>
             </div>
           </header>
