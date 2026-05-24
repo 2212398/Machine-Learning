@@ -1,11 +1,11 @@
-import Image from "next/image";
+import { StickyDiagnoseButton } from "@/components/diagnosis/StickyDiagnoseButton";
 import { Button } from "@/components/ui/button";
 
-const leafImages = [
-  { src: "/leaf-sample-1.svg", alt: "Ảnh mẫu lá cà chua khỏe mạnh" },
-  { src: "/leaf-sample-2.svg", alt: "Ảnh mẫu lá ngô" },
-  { src: "/leaf-sample-3.svg", alt: "Ảnh mẫu lá nho" },
-  { src: "/leaf-sample-4.svg", alt: "Ảnh mẫu lá táo" },
+const leafCards = [
+  { bg: "#d8f3dc", icon: "🌿", label: "Lá khỏe mạnh" },
+  { bg: "#f0fff4", icon: "🍃", label: "Phát hiện bệnh" },
+  { bg: "#e8f5e9", icon: "🌱", label: "Nhận diện cây" },
+  { bg: "#fff8e1", icon: "🔬", label: "Phân tích AI" },
 ];
 
 const steps = [
@@ -36,18 +36,18 @@ const plants = [
   "🥔 Khoai tây",
   "🍇 Nho",
   "🍎 Táo",
-  "Ớt",
+  "🫑 Ớt",
   "🍑 Đào",
-  "Việt quất",
+  "🫐 Việt quất",
   "🍓 Dâu tây",
-  "Đậu nành",
+  "🫘 Đậu nành",
   "☕ Cà phê",
 ];
 
 const reasons = [
   "✅ Kết quả trong 5 giây",
   "📱 Dùng được trên điện thoại",
-  "Miễn phí",
+  "🆓 Hoàn toàn miễn phí",
 ];
 
 export default function HomePage() {
@@ -71,13 +71,14 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button className="min-h-[56px] w-full text-lg sm:w-auto" href="/dashboard/diagnosis" size="lg">
+              <Button className="min-h-[56px] w-full text-lg sm:w-auto" href="/dashboard/diagnosis" size="lg" title="Bắt đầu chẩn đoán bệnh cây">
                 📷 Chẩn đoán ngay
               </Button>
               <Button
                 className="min-h-[56px] w-full border-white/70 text-lg text-white hover:bg-white/10 sm:w-auto"
                 href="#cach-dung"
                 size="lg"
+                title="Xem hướng dẫn sử dụng"
                 variant="outline"
               >
                 Xem cách dùng ↓
@@ -86,19 +87,14 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {leafImages.map((image, index) => (
+            {leafCards.map((card) => (
               <div
-                className="overflow-hidden rounded-lg border border-white bg-white p-2 shadow-md odd:translate-y-6"
-                key={image.src}
+                className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border border-white/70 p-5 text-center text-4xl shadow-md odd:translate-y-6"
+                key={card.label}
+                style={{ backgroundColor: card.bg }}
               >
-                <Image
-                  alt={image.alt}
-                  className="aspect-[4/3] rounded-md object-cover"
-                  height={240}
-                  priority={index === 0}
-                  src={image.src}
-                  width={320}
-                />
+                <span aria-hidden="true">{card.icon}</span>
+                <span className="text-xs font-bold text-neutral-700">{card.label}</span>
               </div>
             ))}
           </div>
@@ -153,17 +149,18 @@ export default function HomePage() {
       <section className="bg-primary py-14 text-white">
         <div className="page-shell flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="font-display text-3xl font-semibold">Thử ngay, hoàn toàn miễn phí</h2>
-          <Button className="min-h-[56px] w-full bg-white text-lg text-primary hover:bg-white/90 sm:w-auto" href="/dashboard/diagnosis" size="lg">
+          <Button
+            className="min-h-[56px] w-full bg-white text-lg text-primary hover:bg-white/90 sm:w-auto"
+            href="/dashboard/diagnosis"
+            size="lg"
+            title="Bắt đầu chẩn đoán bệnh cây"
+          >
             Bắt đầu chẩn đoán
           </Button>
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#1e2235]/95 p-3 sm:hidden">
-        <Button className="min-h-[56px] w-full text-lg" href="/dashboard/diagnosis" size="lg">
-          📷 Chẩn đoán ngay
-        </Button>
-      </div>
+      <StickyDiagnoseButton />
     </div>
   );
 }

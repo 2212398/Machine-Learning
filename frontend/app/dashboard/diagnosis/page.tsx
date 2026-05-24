@@ -257,7 +257,7 @@ export default function DiagnosisPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-2 pb-8">
       <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-        <Link className="text-base font-semibold text-primary" href="/dashboard">
+        <Link className="text-base font-semibold text-primary" href="/dashboard" title="Quay lại dashboard">
           ← Quay lại
         </Link>
         <span className="text-sm font-bold uppercase tracking-[0.18em] text-primary">Plant Detec</span>

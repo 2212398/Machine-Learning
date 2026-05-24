@@ -5,6 +5,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import type { AuthError } from "@supabase/supabase-js";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,28 @@ const signInSchema = z.object({
 });
 
 type SignInValues = z.infer<typeof signInSchema>;
+
+function getErrorMessage(error: AuthError): string {
+  const message = error.message.toLowerCase();
+
+  if (message.includes("invalid login") || message.includes("invalid credentials")) {
+    return "Email hoặc mật khẩu không đúng";
+  }
+
+  if (message.includes("email not confirmed")) {
+    return "Vui lòng xác nhận email trước khi đăng nhập";
+  }
+
+  if (message.includes("too many requests")) {
+    return "Quá nhiều lần thử. Vui lòng đợi vài phút";
+  }
+
+  if (message.includes("network") || message.includes("fetch")) {
+    return "Lỗi kết nối. Kiểm tra mạng và thử lại";
+  }
+
+  return "Đăng nhập thất bại. Vui lòng thử lại";
+}
 
 export function SignInForm() {
   const router = useRouter();
@@ -37,7 +60,7 @@ export function SignInForm() {
     const { error } = await supabase.auth.signInWithPassword(values);
 
     if (error) {
-      setFormError("Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.");
+      setFormError(getErrorMessage(error));
       return;
     }
 
@@ -48,8 +71,12 @@ export function SignInForm() {
   return (
     <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
       {formError ? (
-        <div className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-red-800" role="alert">
-          {formError}
+        <div
+          className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700"
+          role="alert"
+        >
+          <span aria-hidden="true">⚠️</span>
+          <span>{formError}</span>
         </div>
       ) : null}
 
@@ -96,6 +123,15 @@ export function SignInForm() {
             {errors.password.message}
           </p>
         ) : null}
+        <div className="flex justify-end pt-1">
+          <Link
+            className="text-sm font-semibold text-primary hover:underline"
+            href="/forgot-password"
+            title="Lấy lại mật khẩu tài khoản"
+          >
+            Quên mật khẩu?
+          </Link>
+        </div>
       </label>
 
       <Button className="w-full" disabled={isSubmitting} loading={isSubmitting} size="lg" type="submit">
@@ -104,7 +140,11 @@ export function SignInForm() {
 
       <p className="text-center text-sm text-neutral-600">
         {t.auth.noAccount}{" "}
-        <Link className="font-semibold text-primary underline-offset-4 hover:underline" href="/sign-up">
+        <Link
+          className="font-semibold text-primary underline-offset-4 hover:underline"
+          href="/sign-up"
+          title="Tạo tài khoản mới miễn phí"
+        >
           {t.auth.signUp}
         </Link>
       </p>

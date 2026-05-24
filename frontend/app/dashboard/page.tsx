@@ -105,7 +105,7 @@ export default async function DashboardPage() {
     supabase.from("diagnoses").select("created_at").eq("user_id", user.id).gte("created_at", weekStart),
   ]);
 
-  const userName = user.user_metadata?.full_name || user.email;
+  const userName = user.user_metadata?.full_name ?? user.email?.split("@")[0];
   const activityData = lastSevenDays((activityResult.data as ActivityRow[] | null) ?? []);
   const stats = [
     { icon: "📊", value: String(totalResult.count ?? 0), label: "Lần chẩn đoán" },
@@ -121,9 +121,9 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <header className="space-y-4">
         <h2 className="font-display text-3xl font-semibold text-neutral-900">
-          {userName ? `Xin chào ${userName}!` : "Chào mừng trở lại!"}
+          {userName ? `Xin chào ${userName}! 👋` : "Chào mừng trở lại! 👋"}
         </h2>
-        <Button className="min-h-[56px] w-full text-lg sm:w-auto" href="/dashboard/diagnosis">
+        <Button className="min-h-[56px] w-full text-lg sm:w-auto" href="/dashboard/diagnosis" title="Bắt đầu chẩn đoán bệnh cây">
           📷 Chẩn đoán ngay
         </Button>
       </header>
@@ -146,7 +146,7 @@ export default async function DashboardPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-xl font-bold text-neutral-900">Lịch sử gần đây</h3>
-          <Link className="text-sm font-semibold text-primary" href="/dashboard/history">
+          <Link className="text-sm font-semibold text-primary" href="/dashboard/history" title="Xem toàn bộ lịch sử chẩn đoán">
             Xem toàn bộ lịch sử →
           </Link>
         </div>
