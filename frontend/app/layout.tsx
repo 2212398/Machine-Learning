@@ -46,10 +46,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               <Link href="/" className="flex items-center gap-2 font-bold" title="Về trang chủ Plant Detec">
                 <span className="text-xl" aria-hidden="true">🌿</span>
                 <span className="hidden text-sm font-bold tracking-wide sm:block">
-                  CHẨN ĐOÁN CÂY AI
+                  PLANT DETEC
                 </span>
                 <span className="text-sm font-bold tracking-wide sm:hidden">
-                  CÂY AI
+                  PLANT DETEC
                 </span>
               </Link>
 
