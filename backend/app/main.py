@@ -274,9 +274,13 @@ def get_recommendation(disease_label: str, plant_label: str):
     - plant_label: plant label (e.g. Tomato)
     """
     try:
-        summary = recommender.get(disease_label=disease_label, plant_label=plant_label)
+        recommendation = recommender.get(disease_label=disease_label, plant_label=plant_label)
         checklist = recommender.get_checklist(disease_label=disease_label, plant_label=plant_label)
-        return {"summary": summary, "checklist": checklist}
+        if isinstance(recommendation, dict):
+            summary = recommendation.get("ten_benh") or recommendation.get("trieu_chung") or ""
+        else:
+            summary = recommendation
+        return {"summary": summary, "recommendation": recommendation, "checklist": checklist}
     except Exception:
         raise HTTPException(status_code=500, detail="Không thể lấy khuyến nghị lúc này.")
 

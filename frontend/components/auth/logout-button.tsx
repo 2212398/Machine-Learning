@@ -1,15 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button, type ButtonVariant } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type LogoutButtonProps = {
   className?: string;
-  variant?: ButtonVariant;
 };
 
-export function LogoutButton({ className, variant = "secondary" }: LogoutButtonProps) {
+export function LogoutButton({ className }: LogoutButtonProps) {
   const router = useRouter();
 
   async function handleLogout() {
@@ -20,8 +18,13 @@ export function LogoutButton({ className, variant = "secondary" }: LogoutButtonP
   }
 
   return (
-    <Button className={className} type="button" variant={variant} onClick={handleLogout}>
-      Đăng xuất
-    </Button>
+    <button
+      className={`flex min-h-[40px] items-center gap-1.5 rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 ${className ?? ""}`}
+      onClick={handleLogout}
+      type="button"
+    >
+      <span className="hidden sm:inline">Đăng xuất</span>
+      <span className="sm:hidden">↩</span>
+    </button>
   );
 }

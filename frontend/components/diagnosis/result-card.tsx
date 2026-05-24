@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
+import { RecommendationPanel } from "@/components/diagnosis/RecommendationPanel";
 import { recordFeedback } from "@/lib/actions/feedback";
-import type { DiagnosisResult } from "@/types/api";
+import { getDiseaseDisplayName, getPlantDisplayName, getSeverity, severityConfig } from "@/lib/diagnosis-display";
+import type { DiagnosisResult, RecommendationDetail } from "@/types/api";
 
 type Severity = "healthy" | "mild" | "severe" | "unknown";
 
@@ -17,7 +19,7 @@ export interface ResultCardProps {
   diseaseNameVi?: string;
   diseaseConfidence: number;
   severity: Severity;
-  recommendation: string;
+  recommendation: RecommendationDetail | string;
   isLoading?: boolean;
   onFeedback?: (isCorrect: boolean) => void;
   className?: string;
@@ -44,7 +46,7 @@ function confidenceColor(value: number) {
   return "bg-danger";
 }
 
-function ConfidenceBar({ label, value }: { label: string; value: number }) {
+function ConfidenceBar({ label, value, barClassName }: { label: string; value: number; barClassName?: string }) {
   const [animatedValue, setAnimatedValue] = useState(0);
   const safeValue = clampConfidence(value);
   const percent = safeValue * 100;
@@ -69,7 +71,7 @@ function ConfidenceBar({ label, value }: { label: string; value: number }) {
         role="progressbar"
       >
         <div
-          className={`${confidenceColor(safeValue)} h-full rounded-full transition-all duration-700 ease-out`}
+          className={`${barClassName ?? confidenceColor(safeValue)} h-full rounded-full transition-all duration-700 ease-out`}
           style={{ width: `${animatedValue}%` }}
         />
       </div>
@@ -109,10 +111,21 @@ export function ResultCard({
     return <ResultSkeleton />;
   }
 
-  const meta = severityMeta[severity];
-  const recommendationText =
-    severity === "healthy"
-      ? "Cây trồng đang phát triển tốt! Tiếp tục chăm sóc như hiện tại."
+  const inferredSeverity = getSeverity(diseaseName, diseaseConfidence);
+  const severityForDisplay = severity === "unknown" ? inferredSeverity : severity;
+  const meta = severityMeta[severityForDisplay];
+  const cfg = severityConfig[severityForDisplay];
+  const recommendationValue =
+    severityForDisplay === "healthy" && typeof recommendation === "string"
+      ? {
+          ten_benh: "Cây khỏe mạnh",
+          nguyen_nhan: "",
+          trieu_chung: "Không phát hiện dấu hiệu bệnh",
+          xu_ly: [],
+          phong_ngua: [recommendation || "Cây trồng đang phát triển tốt! Tiếp tục chăm sóc như hiện tại."],
+          muc_do: "healthy",
+          thoi_gian_xu_ly: "",
+        }
       : recommendation;
 
   return (
@@ -121,30 +134,24 @@ export function ResultCard({
         <Badge aria-label={`Severity: ${meta.label}`} data-testid="severity-badge" icon={meta.icon} variant={meta.variant}>
           {meta.label}
         </Badge>
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium ${cfg.color}`}>
+          {cfg.badge}
+        </span>
         <div>
           <h2 className="font-display text-xl font-semibold text-neutral-900">
-            {plantNameVi || plantName}
+            {plantNameVi || getPlantDisplayName(plantName)}
           </h2>
-          <h3 className="mt-1 text-base text-neutral-700">{diseaseNameVi || diseaseName}</h3>
+          <h3 className="mt-1 text-base text-neutral-700">{diseaseNameVi || getDiseaseDisplayName(diseaseName)}</h3>
         </div>
       </header>
 
       <section className="space-y-4">
-        <ConfidenceBar label="Nhận diện cây" value={plantConfidence} />
-        <ConfidenceBar label="Nhận diện bệnh" value={diseaseConfidence} />
+        <ConfidenceBar label="Nhận diện cây" value={plantConfidence} barClassName="bg-green-400" />
+        <ConfidenceBar label="Nhận diện bệnh" value={diseaseConfidence} barClassName={cfg.bar} />
       </section>
 
-      <section
-        aria-live="polite"
-        className="rounded-lg border border-primary-pale bg-primary-pale/50 p-4"
-      >
-        <h4 className="flex items-center gap-2 font-semibold text-primary">
-          <span aria-hidden="true">🌿</span>
-          Khuyến nghị điều trị
-        </h4>
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-          {recommendationText || "Chưa có khuyến nghị phù hợp cho kết quả này."}
-        </p>
+      <section aria-live="polite">
+        <RecommendationPanel diseaseLabel={diseaseName} recommendation={recommendationValue} />
       </section>
 
       {onFeedback ? (
@@ -169,7 +176,7 @@ interface DiagnosisResultProps {
 export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [recommendation, setRecommendation] = useState<RecommendationDetail | string | null>(null);
   const [recommendationLoading, setRecommendationLoading] = useState(true);
   const [checklist, setChecklist] = useState<{
     immediate: string[];
@@ -191,6 +198,8 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
   const diseaseConfidencePercent = Math.round(
     result.disease_confidence * 100
   );
+  const resultSeverity = getSeverity(result.disease_label, result.disease_confidence);
+  const resultSeverityConfig = severityConfig[resultSeverity];
   const diseaseCandidates = Array.isArray(result.disease_top_candidates)
     ? result.disease_top_candidates.slice(0, 3)
     : [];
@@ -217,7 +226,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
-        setRecommendation(data.summary || null);
+        setRecommendation(data.recommendation || data.summary || null);
         const nextChecklist = data?.checklist;
         setChecklist({
           immediate: Array.isArray(nextChecklist?.immediate) ? nextChecklist.immediate : [],
@@ -267,7 +276,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
               Loại cây
             </p>
             <h3 className="text-xl font-bold text-surface-dark mb-3">
-              {result.plant_label}
+              {getPlantDisplayName(result.plant_label)}
             </h3>
 
             {/* Confidence bar */}
@@ -287,7 +296,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
                 role="progressbar"
               >
                 <div
-                  className="bg-gradient-to-r from-brand-400 to-brand-600 h-full rounded-full transition-all"
+                  className="h-full rounded-full bg-green-400 transition-all"
                   style={{ width: `${plantConfidencePercent}%` }}
                 />
               </div>
@@ -299,8 +308,11 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
             <p className="text-sm text-muted-foreground uppercase tracking-wide mb-2">
               Bệnh trên lá
             </p>
+            <span className={`mb-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium ${resultSeverityConfig.color}`}>
+              {resultSeverityConfig.badge}
+            </span>
             <h3 className="text-xl font-bold text-surface-dark mb-3">
-              {result.disease_label}
+              {getDiseaseDisplayName(result.disease_label)}
             </h3>
 
             {/* Confidence bar */}
@@ -320,7 +332,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
                 role="progressbar"
               >
                 <div
-                  className="bg-gradient-to-r from-brand-400 to-brand-600 h-full rounded-full transition-all"
+                  className={`${resultSeverityConfig.bar} h-full rounded-full transition-all`}
                   style={{ width: `${diseaseConfidencePercent}%` }}
                 />
               </div>
@@ -346,7 +358,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
                   <div key={`${candidate.label}-${candidate.rank ?? index}`} className="space-y-2">
                     <div className="flex items-center justify-between gap-3 text-sm">
                       <span className="font-medium text-foreground">
-                        #{candidate.rank ?? index + 1} {candidate.label}
+                        #{candidate.rank ?? index + 1} {getDiseaseDisplayName(candidate.label)}
                       </span>
                       <span className="text-muted-foreground">{percent}%</span>
                     </div>
@@ -378,7 +390,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
           {recommendationLoading ? (
             <p className="mt-2 text-sm text-muted-foreground">Đang tải khuyến nghị…</p>
           ) : recommendation ? (
-            <p className="mt-2 text-sm text-brand-800">{recommendation}</p>
+            <RecommendationPanel diseaseLabel={result.disease_label} recommendation={recommendation} />
           ) : (
             <p className="mt-2 text-sm text-muted-foreground">Chưa có khuyến nghị.</p>
           )}
@@ -442,7 +454,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
                 </div>
               </div>
               <div className="space-y-4">
-                <p className="text-sm">{recommendation}</p>
+                <RecommendationPanel diseaseLabel={result.disease_label} recommendation={recommendation} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <h4 className="font-semibold">Hành động ngay</h4>

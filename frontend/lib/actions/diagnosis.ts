@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { DiagnosisResult, DiseaseCandidate, Step1PlantResponse, Step2DiseaseResponse } from "@/types/api";
+import type { DiagnosisResult, DiseaseCandidate, RecommendationDetail, Step1PlantResponse, Step2DiseaseResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 
 // Narrow DB row types for safer supabase typings
@@ -108,7 +108,7 @@ async function _persistDiagnosis(params: {
   diseaseConfidence: number;
   diseaseTopCandidates?: DiseaseCandidate[];
   status: string;
-  recommendation?: string | null;
+  recommendation?: RecommendationDetail | string | null;
 }): Promise<{ data?: DiagnosisResult; error?: string }> {
   const supabase = await createSupabaseServerClient();
 
@@ -133,6 +133,13 @@ async function _persistDiagnosis(params: {
     imageUrl = await _fileToDataUrl(params.file);
   }
 
+  const recommendationForDb =
+    typeof params.recommendation === "string"
+      ? params.recommendation
+      : params.recommendation
+        ? JSON.stringify(params.recommendation)
+        : null;
+
   const { data: diagnosis, error: dbError } = await (supabase.from("diagnoses") as any)
     .insert({
       user_id: params.userId,
@@ -141,7 +148,7 @@ async function _persistDiagnosis(params: {
       disease_label: params.diseaseLabel,
       disease_confidence: params.diseaseConfidence,
       status: params.status || "completed",
-      recommendation: params.recommendation ?? null,
+      recommendation: recommendationForDb,
       image_url: imageUrl,
       model_version: "mobilenetv3-two-step",
     } as Database["public"]["Tables"]["diagnoses"]["Insert"])

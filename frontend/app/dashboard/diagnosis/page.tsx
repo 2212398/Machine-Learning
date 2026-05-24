@@ -4,8 +4,10 @@ import * as Sentry from "@sentry/nextjs";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type ChangeEvent } from "react";
 import { FeedbackWidget } from "@/components/diagnosis/FeedbackWidget";
+import { RecommendationPanel } from "@/components/diagnosis/RecommendationPanel";
 import { Button } from "@/components/ui/button";
 import { confirmAndDiagnose, uploadDiagnosis } from "@/lib/actions/diagnosis";
+import { getDiseaseDisplayName, getPlantDisplayName, getSeverity, severityConfig } from "@/lib/diagnosis-display";
 import { vi } from "@/lib/vi";
 import { toast } from "@/lib/toast";
 import type { DiagnosisResult, Step1PlantResponse } from "@/types/api";
@@ -79,6 +81,8 @@ export default function DiagnosisPage() {
 
   const isProcessing = isPending || state === "uploading" || state === "analyzing_plant" || state === "analyzing_disease";
   const progress = stepInfo(state);
+  const resultSeverity = result ? getSeverity(result.disease_label, result.disease_confidence) : "unknown";
+  const resultSeverityConfig = severityConfig[resultSeverity];
 
   useEffect(() => {
     return () => {
@@ -349,7 +353,7 @@ export default function DiagnosisPage() {
                   type="button"
                 >
                   <span className="flex items-center justify-between gap-3">
-                    <span className="font-bold">{candidate.label}</span>
+                    <span className="font-bold">{getPlantDisplayName(candidate.label)}</span>
                     <span className="text-sm font-semibold">{confidence}%</span>
                   </span>
                 </button>
@@ -390,26 +394,46 @@ export default function DiagnosisPage() {
         <div className="space-y-4" ref={resultRef} tabIndex={-1}>
           <section className="space-y-5 rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm" data-testid="result-card">
             <div>
-              <h2 className="text-2xl font-bold text-neutral-900">{result.plant_label}</h2>
-              <p className="mt-2 text-xl font-semibold text-red-700" data-testid="severity-badge">
-                {result.disease_label}
+              <h2 className="text-2xl font-bold text-neutral-900">{getPlantDisplayName(result.plant_label)}</h2>
+              <p className="mt-2 text-xl font-semibold text-neutral-800">
+                {getDiseaseDisplayName(result.disease_label)}
               </p>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-base font-semibold">
-                <span>Mức độ</span>
-                <span>{Math.round(result.disease_confidence * 100)}%</span>
+            <div className="space-y-3">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium ${resultSeverityConfig.color}`}
+                data-testid="severity-badge"
+              >
+                {resultSeverityConfig.badge}
+              </span>
+
+              <div>
+                <div className="mb-1 flex justify-between text-sm">
+                  <span className="text-neutral-500">Nhận diện cây</span>
+                  <span className="font-medium">{(result.plant_confidence * 100).toFixed(1)}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
+                  <div
+                    className="h-full rounded-full bg-green-400 transition-all duration-700"
+                    style={{ width: `${Math.round(result.plant_confidence * 100)}%` }}
+                  />
+                </div>
               </div>
-              <div className="h-3 rounded-full bg-neutral-100">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round(result.disease_confidence * 100)}%` }} />
+
+              <div>
+                <div className="mb-1 flex justify-between text-sm">
+                  <span className="text-neutral-500">Nhận diện bệnh</span>
+                  <span className="font-medium">{(result.disease_confidence * 100).toFixed(1)}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${resultSeverityConfig.bar}`}
+                    style={{ width: `${Math.round(result.disease_confidence * 100)}%` }}
+                  />
+                </div>
               </div>
             </div>
-            <div className="rounded-xl bg-primary-pale/50 p-4">
-              <h3 className="text-lg font-bold text-primary">Hướng điều trị</h3>
-              <p className="mt-2 text-base leading-8 text-neutral-700">
-                {result.recommendation || "Theo dõi cây trong vài ngày tới và tham khảo kỹ thuật viên nếu bệnh lan rộng."}
-              </p>
-            </div>
+            <RecommendationPanel diseaseLabel={result.disease_label} recommendation={result.recommendation} />
             <FeedbackWidget
               diagnosisId={result.id}
               predictedDisease={result.disease_label}

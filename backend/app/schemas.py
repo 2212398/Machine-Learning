@@ -7,6 +7,16 @@ class RecommendationChecklist(BaseModel):
     consult: list[str] = Field(default_factory=list)
 
 
+class RecommendationDetail(BaseModel):
+    ten_benh: str = ""
+    nguyen_nhan: str = ""
+    trieu_chung: str = ""
+    xu_ly: list[str] = Field(default_factory=list)
+    phong_ngua: list[str] = Field(default_factory=list)
+    muc_do: str = "unknown"
+    thoi_gian_xu_ly: str = ""
+
+
 class DiseaseCandidate(BaseModel):
     label: str
     confidence: float
@@ -23,7 +33,7 @@ class PredictResponse(BaseModel):
     step2_done: bool = True
     step2_allowed_classes: int = 0
     inference_mode: str = "two_step"
-    recommendation: str
+    recommendation: RecommendationDetail | str
     recommendation_checklist: RecommendationChecklist | None = None
     status: str
     message: str | None = None
@@ -84,7 +94,7 @@ class Step2DiseaseResponse(BaseModel):
     final_disease_label: str
     final_disease_confidence: float
     final_disease_top_candidates: list[DiseaseCandidate] = Field(default_factory=list)
-    recommendation: str
+    recommendation: RecommendationDetail | str
     recommendation_checklist: RecommendationChecklist | None = None
     status: str
     message: str | None = None

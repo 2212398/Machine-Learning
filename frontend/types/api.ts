@@ -56,9 +56,19 @@ export interface Step2DiseaseResponse {
   final_disease_label: string;
   final_disease_confidence: number;
   final_disease_top_candidates?: DiseaseCandidate[];
-  recommendation?: string;
+  recommendation?: RecommendationDetail | string;
   status: string;
   message?: string | null;
+}
+
+export interface RecommendationDetail {
+  ten_benh: string;
+  nguyen_nhan: string;
+  trieu_chung: string;
+  xu_ly: string[];
+  phong_ngua: string[];
+  muc_do: string;
+  thoi_gian_xu_ly: string;
 }
 
 // Frontend diagnosis result
@@ -69,7 +79,7 @@ export interface DiagnosisResult {
   disease_label: string;
   disease_confidence: number;
   disease_top_candidates?: DiseaseCandidate[];
-  recommendation?: string | null;
+  recommendation?: RecommendationDetail | string | null;
   image_url: string;
   created_at: string;
 }
