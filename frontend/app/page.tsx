@@ -30,18 +30,15 @@ const steps = [
 ];
 
 const plants = [
-  "🍅 Cà chua",
-  "🌾 Lúa",
-  "🌽 Ngô",
-  "🥔 Khoai tây",
-  "🍇 Nho",
   "🍎 Táo",
-  "🫑 Ớt",
+  "🍒 Anh đào",
+  "🌽 Ngô",
+  "🍇 Nho",
   "🍑 Đào",
-  "🫐 Việt quất",
+  "🫑 Ớt chuông",
+  "🥔 Khoai tây",
   "🍓 Dâu tây",
-  "🫘 Đậu nành",
-  "☕ Cà phê",
+  "🍅 Cà chua",
 ];
 
 const reasons = [
@@ -119,7 +116,7 @@ export default function HomePage() {
 
       <section className="bg-white py-14 text-neutral-900">
         <div className="page-shell space-y-8">
-          <h2 className="font-display text-3xl font-semibold">Nhận diện được 14 loại cây phổ biến</h2>
+          <h2 className="font-display text-3xl font-semibold">Nhận diện được 9 loại cây phổ biến</h2>
           <div className="flex flex-wrap gap-3">
             {plants.map((plant) => (
               <span

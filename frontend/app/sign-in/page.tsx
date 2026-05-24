@@ -12,8 +12,8 @@ export default function SignInPage() {
               Phát hiện sớm, bảo vệ mùa vụ.
             </h1>
             <div className="mt-8 grid grid-cols-3 gap-3 text-center text-sm text-white/80">
-              <div>🌾<br />14 loại cây</div>
-              <div>🔬<br />38 loại bệnh</div>
+              <div>🌾<br />9 loại cây</div>
+              <div>🔬<br />33 nhãn bệnh</div>
               <div>⚡<br />5 giây/ảnh</div>
             </div>
           </div>
