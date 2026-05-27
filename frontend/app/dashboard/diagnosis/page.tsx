@@ -1,6 +1,7 @@
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type ChangeEvent } from "react";
 import { FeedbackWidget } from "@/components/diagnosis/FeedbackWidget";
@@ -284,7 +285,9 @@ export default function DiagnosisPage() {
         type="button"
       >
         {preview ? (
-          <img alt="Ảnh lá cây đã chọn" className="max-h-[300px] w-full rounded-xl object-cover" src={preview} />
+          <div className="relative h-[300px] w-full overflow-hidden rounded-xl">
+            <Image alt="Ảnh lá cây đã chọn" fill className="object-cover" src={preview} unoptimized />
+          </div>
         ) : (
           <>
             <span className="text-[64px] leading-none">🍃</span>

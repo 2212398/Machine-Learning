@@ -1,10 +1,17 @@
 import argparse
 import json
 import math
+import os
 import random
+import sys
 import time
 from pathlib import Path
 from collections import defaultdict
+
+# Fix UTF-8 encoding for Vietnamese paths in console output
+if sys.stdout and (not sys.stdout.encoding or sys.stdout.encoding.lower() != 'utf-8'):
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 import torch
 from torch import nn
@@ -25,7 +32,7 @@ def get_args():
     parser.add_argument("--weight-decay", type=float, default=2e-4)
     parser.add_argument("--label-smoothing", type=float, default=0.1)
     parser.add_argument("--class-weight-mode", choices=["none", "balanced"], default="balanced")
-    parser.add_argument("--backbone", choices=["small", "large", "efficientnet_b4"], default="efficientnet_b4")
+    parser.add_argument("--backbone", choices=["efficientnet_b4"], default="efficientnet_b4")
     parser.add_argument("--image-size", type=int, default=0, help="Override model image size (0 = backbone default)")
     parser.add_argument("--num-workers", type=int, default=6)
     parser.add_argument("--log-interval", type=int, default=5)
@@ -98,18 +105,55 @@ def rgb_loader(path: str):
 
 
 def build_model(backbone: str, num_classes: int):
-    if backbone == "small":
-        model = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.DEFAULT)
-    elif backbone == "large":
-        model = models.mobilenet_v3_large(weights=models.MobileNet_V3_Large_Weights.DEFAULT)
-    elif backbone == "efficientnet_b4":
-        model = models.efficientnet_b4(weights=models.EfficientNet_B4_Weights.DEFAULT)
-    else:
+    if backbone != "efficientnet_b4":
         raise ValueError(f"Unsupported backbone: {backbone}")
 
+    model = models.efficientnet_b4(
+        weights=models.EfficientNet_B4_Weights.DEFAULT,
+        stochastic_depth_prob=0.3,
+    )
     in_features = model.classifier[-1].in_features
-    model.classifier[-1] = nn.Linear(in_features, num_classes)
+    if in_features != 1792:
+        raise ValueError(f"Expected EfficientNet-B4 classifier input features to be 1792, got {in_features}")
+
+    model.classifier = nn.Sequential(
+        nn.Dropout(p=0.4),
+        nn.Linear(in_features, 512),
+        nn.SiLU(),
+        nn.Dropout(p=0.3),
+        nn.Linear(512, num_classes),
+    )
+    init_classifier(model.classifier)
     return model
+
+
+def init_classifier(classifier: nn.Module) -> None:
+    for module in classifier.modules():
+        if isinstance(module, nn.Linear):
+            nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+
+
+def freeze_backbone(model: nn.Module) -> None:
+    features = getattr(model, "features", None)
+    if features is None:
+        return
+    for param in features.parameters():
+        param.requires_grad = False
+
+
+def unfreeze_backbone(model: nn.Module) -> None:
+    features = getattr(model, "features", None)
+    if features is None:
+        return
+    for param in features.parameters():
+        param.requires_grad = True
+
+
+def set_optimizer_lr(optimizer: torch.optim.Optimizer, lr: float) -> None:
+    for group in optimizer.param_groups:
+        group["lr"] = lr
 
 
 def seed_everything(seed: int) -> None:
@@ -123,13 +167,16 @@ def seed_everything(seed: int) -> None:
 def build_train_transform(image_size: int) -> transforms.Compose:
     return transforms.Compose(
         [
-            transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0)),
+            transforms.RandomResizedCrop(image_size, scale=(0.6, 1.0)),
             transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.15),
             transforms.RandomRotation(degrees=15),
             transforms.RandomGrayscale(p=0.05),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.03),
+            transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.05),
+            transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            transforms.RandomErasing(p=0.3, scale=(0.02, 0.2), ratio=(0.3, 3.3), value="random"),
         ]
     )
 
@@ -296,13 +343,14 @@ def main():
     eval_transform = build_eval_transform(image_size)
 
     train_dataset = datasets.ImageFolder(str(train_dir), transform=train_transform, loader=rgb_loader)
+    persistent_workers = (args.num_workers > 0) and (os.name != "nt")
     train_loader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
         pin_memory=pin_memory,
-        persistent_workers=args.num_workers > 0,
+        persistent_workers=persistent_workers,
     )
 
     val_loader = None
@@ -314,7 +362,7 @@ def main():
             shuffle=False,
             num_workers=args.num_workers,
             pin_memory=pin_memory,
-            persistent_workers=args.num_workers > 0,
+            persistent_workers=persistent_workers,
         )
     else:
         val_dataset = None
@@ -327,10 +375,11 @@ def main():
         class_weights = compute_class_weights(train_dataset).to(device)
 
     criterion = build_criterion(class_weights=class_weights, label_smoothing=args.label_smoothing)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    freeze_backbone(model)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
-        T_max=max(1, args.epochs),
+        T_max=max(1, args.epochs - 5),
         eta_min=max(0.0, args.min_lr),
     )
     scaler = GradScaler("cuda", enabled=use_amp)
@@ -368,8 +417,23 @@ def main():
         running_correct = 0
         running_total = 0
         total_steps = len(train_loader)
+        if epoch <= 5:
+            phase = "Frozen"
+            freeze_backbone(model)
+            set_optimizer_lr(optimizer, 1e-3)
+        else:
+            phase = "Unfrozen"
+            unfreeze_backbone(model)
+            if epoch == 6:
+                set_optimizer_lr(optimizer, args.lr)
+                scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer,
+                    T_max=max(1, args.epochs - 5),
+                    eta_min=max(0.0, args.min_lr),
+                )
+
         current_lr = optimizer.param_groups[0]["lr"]
-        print(f"[Epoch {epoch}/{args.epochs}] lr={current_lr:.7f}")
+        print(f"[Epoch {epoch}/{args.epochs}] phase={phase} lr={current_lr:.7f}")
 
         for step, (images, labels) in enumerate(train_loader, start=1):
             images = images.to(device)
@@ -457,7 +521,8 @@ def main():
             torch.save(model.state_dict(), str(epoch_path))
             print(f"[Checkpoint] epoch model saved to {epoch_path}")
 
-        scheduler.step()
+        if epoch > 5:
+            scheduler.step()
 
         epoch_seconds = time.time() - epoch_start
         print(f"[Epoch {epoch}/{args.epochs}] elapsed={epoch_seconds:.1f}s")

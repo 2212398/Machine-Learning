@@ -6,6 +6,23 @@ param(
     [int]$NumWorkers  = 6
 )
 
+$OutputEncoding = [System.Text.UTF8Encoding]::new()
+$env:PYTHONUTF8 = "1"
+$env:PYTHONIOENCODING = "utf-8"
+
+try {
+    [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+} catch {
+    # Some hosts block console encoding changes; keep going with environment vars.
+}
+
+try {
+    chcp 65001 | Out-Null
+} catch {
+    # Ignore if the host does not allow code page changes.
+}
+
 $ProjectRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path -LiteralPath $Python)) {
@@ -50,6 +67,10 @@ $mapArgs = @(
 Write-Host "[Disease Train] Start"
 Write-Host "train=$trainDir"
 Write-Host "val=$valDir"
+Write-Host "[Disease Train] Step2 disease-only flow"
+Write-Host "[Disease Train] Epochs 1-5: Frozen backbone"
+Write-Host "[Disease Train] Epoch 6+: Unfrozen backbone, val loss should ease down gradually"
+Write-Host "[Disease Train] Unknown rate may stay high because anti-overfit guards are active"
 
 Set-Location (Join-Path $ProjectRoot "code\training")
 & $Python @trainArgs

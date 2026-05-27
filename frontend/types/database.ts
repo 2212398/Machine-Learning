@@ -128,6 +128,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      scan_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          image_url: string | null;
+          plant_label: string;
+          disease_label: string;
+          confidence: number;
+          status: "completed" | "unknown" | "failed";
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          image_url?: string | null;
+          plant_label: string;
+          disease_label: string;
+          confidence?: number;
+          status?: "completed" | "unknown" | "failed";
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          image_url?: string | null;
+          plant_label?: string;
+          disease_label?: string;
+          confidence?: number;
+          status?: "completed" | "unknown" | "failed";
+          note?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
