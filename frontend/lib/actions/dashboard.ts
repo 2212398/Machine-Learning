@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   ActivityPoint,
@@ -17,6 +18,7 @@ type DiagnosisRow = {
   disease_label: string | null;
   disease_confidence: number | null;
   image_url: string | null;
+  note: string | null;
 };
 
 type PlantRow = { plant_label: string | null };
@@ -54,7 +56,13 @@ function mapDiagnosis(row: DiagnosisRow): DiagnosisHistoryItem {
     severity: getDiagnosisSeverity(diseaseName, confidence),
     imageUrl: row.image_url || undefined,
     confidence,
+    note: row.note,
   };
+}
+
+function normalizeNote(note: string) {
+  const value = note.trim();
+  return value.length > 0 ? value : null;
 }
 
 function modePlant(rows: PlantRow[]) {
@@ -102,7 +110,7 @@ export async function getDiagnoses(
 
   let query = supabase
     .from("diagnoses")
-    .select("id, created_at, plant_label, disease_label, disease_confidence, image_url")
+    .select("id, created_at, plant_label, disease_label, disease_confidence, image_url, note")
     .eq("user_id", authData.user.id)
     .order("created_at", { ascending: false })
     .limit(limit + 1);
@@ -134,6 +142,57 @@ export async function getDiagnoses(
     nextCursor: rows.at(-1)?.created_at ?? null,
     hasMore,
   };
+}
+
+export async function updateNote(id: string, note: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData.user) {
+    throw new Error("Bạn cần đăng nhập để sửa ghi chú.");
+  }
+
+  const table = supabase.from("diagnoses") as any;
+
+  // Always filter by both id and user_id so a user cannot mutate another user's row.
+  const { data, error } = await table
+    .update({ note: normalizeNote(note) })
+    .eq("id", id)
+    .eq("user_id", authData.user.id)
+    .select("id, created_at, plant_label, disease_label, disease_confidence, image_url, note")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/dashboard/history");
+  revalidatePath("/dashboard");
+  return mapDiagnosis(data as DiagnosisRow);
+}
+
+export async function deleteRecord(id: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData.user) {
+    throw new Error("Bạn cần đăng nhập để xóa lịch sử.");
+  }
+
+  const table = supabase.from("diagnoses") as any;
+
+  // RLS protects the table, and user_id makes the target row explicit.
+  const { error } = await table
+    .delete()
+    .eq("id", id)
+    .eq("user_id", authData.user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/dashboard/history");
+  revalidatePath("/dashboard");
 }
 
 export async function getDiagnosisStats(): Promise<DiagnosisStats> {

@@ -8,6 +8,7 @@ export interface DiagnosisHistoryItem {
   severity: DiagnosisSeverity;
   imageUrl?: string;
   confidence: number;
+  note?: string | null;
 }
 
 export interface DiagnosisPageResult {

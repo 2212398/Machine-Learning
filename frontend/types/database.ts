@@ -38,6 +38,7 @@ export type Database = {
           disease_confidence: number | null;
           status: string;
           recommendation: string | null;
+          note: string | null;
           image_url: string | null;
           model_version: string | null;
           created_at: string;
@@ -51,6 +52,7 @@ export type Database = {
           disease_confidence?: number | null;
           status: string;
           recommendation?: string | null;
+          note?: string | null;
           image_url?: string | null;
           model_version?: string | null;
           created_at?: string;
@@ -62,6 +64,7 @@ export type Database = {
           disease_confidence?: number | null;
           status?: string;
           recommendation?: string | null;
+          note?: string | null;
           image_url?: string | null;
           model_version?: string | null;
         };

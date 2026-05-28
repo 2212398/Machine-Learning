@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useMemo, useState } from "react";
+import { HistoryItem } from "@/components/dashboard/HistoryItem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { DiagnosisHistoryItem } from "@/types/dashboard";
@@ -13,13 +13,20 @@ function isHealthy(item: DiagnosisHistoryItem) {
 }
 
 export function SimpleHistoryList({ items }: { items: DiagnosisHistoryItem[] }) {
+  const [rows, setRows] = useState(items);
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(10);
 
+  useEffect(() => {
+    setRows(items);
+  }, [items]);
+
   const filtered = useMemo(() => {
-    return items.filter((item) => {
-      const matchesSearch = item.plantName.toLowerCase().includes(search.trim().toLowerCase());
+    return rows.filter((item) => {
+      const keyword = search.trim().toLowerCase();
+      const searchable = `${item.plantName} ${item.diseaseName} ${item.note ?? ""}`.toLowerCase();
+      const matchesSearch = searchable.includes(keyword);
       const matchesFilter =
         filter === "all" ||
         (filter === "healthy" && isHealthy(item)) ||
@@ -27,11 +34,11 @@ export function SimpleHistoryList({ items }: { items: DiagnosisHistoryItem[] }) 
 
       return matchesSearch && matchesFilter;
     });
-  }, [filter, items, search]);
+  }, [filter, rows, search]);
 
   const visible = filtered.slice(0, visibleCount);
 
-  if (items.length === 0) {
+  if (rows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center">
         <div className="text-5xl">🔍</div>
@@ -79,21 +86,14 @@ export function SimpleHistoryList({ items }: { items: DiagnosisHistoryItem[] }) 
 
       <div className="space-y-3">
         {visible.map((item) => (
-          <article className="flex gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm" key={item.id}>
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-primary-pale">
-              {item.imageUrl ? <img alt="" className="h-full w-full object-cover" src={item.imageUrl} /> : null}
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="truncate text-lg font-bold text-neutral-900">{item.plantName}</h3>
-              <p className="truncate text-base text-neutral-700">{item.diseaseName}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-500">
-                <span>{new Date(item.createdAt).toLocaleDateString("vi-VN")}</span>
-                <Badge size="sm" variant={isHealthy(item) ? "healthy" : "severe"}>
-                  {isHealthy(item) ? "Khỏe" : "Bệnh"}
-                </Badge>
-              </div>
-            </div>
-          </article>
+          <HistoryItem
+            item={item}
+            key={item.id}
+            onDeleted={(id) => setRows((current) => current.filter((row) => row.id !== id))}
+            onUpdated={(updated) =>
+              setRows((current) => current.map((row) => (row.id === updated.id ? updated : row)))
+            }
+          />
         ))}
       </div>
 
