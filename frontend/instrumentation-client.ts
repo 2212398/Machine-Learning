@@ -1,4 +1,16 @@
 import * as Sentry from "@sentry/nextjs";
-import "./sentry.client.config";
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+  integrations: [
+    Sentry.replayIntegration({
+      maskAllText: true, // Mask user-entered text in replays to avoid leaking diagnosis data.
+      blockAllMedia: true, // Block uploaded plant images and previews from replay capture.
+    }),
+  ],
+});
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

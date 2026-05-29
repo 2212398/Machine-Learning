@@ -25,6 +25,8 @@ function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) 
 }
 
 export async function middleware(request: NextRequest) {
+  const publicRoutes = new Set(["/", "/sign-in", "/sign-up", "/forgot-password"]);
+  const isPublicRoute = publicRoutes.has(request.nextUrl.pathname);
   const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
   let response = NextResponse.next({
     request: {
@@ -60,8 +62,8 @@ export async function middleware(request: NextRequest) {
   const { data, error } = await supabase.auth.getUser();
 
   if (error) {
-    // Anonymous public requests can return AuthSessionMissingError; only protected routes redirect.
-    if (!isProtectedRoute) {
+    // Keep public pages out of the redirect path to prevent anonymous auth loops.
+    if (isPublicRoute || !isProtectedRoute) {
       clearSupabaseAuthCookies(request, response);
       response.headers.set("Cache-Control", "private, no-store");
       return response;
