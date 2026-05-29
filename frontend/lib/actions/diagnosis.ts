@@ -72,13 +72,19 @@ async function _callFastApiStep1(file: File): Promise<Step1PlantResponse> {
   const fd = new FormData();
   fd.append("file", file);
 
-  const res = await fetch(`${FASTAPI_URL}/api/step1/plant`, {
+  const url = `${FASTAPI_URL}/api/step1/plant`;
+  const res = await fetch(url, {
     method: "POST",
     body: fd,
   });
 
   if (!res.ok) {
-    throw new Error(await _readFastApiError(res));
+    const message = await _readFastApiError(res);
+    const requestId = res.headers.get("x-request-id");
+    console.error(
+      `[Diagnosis] FastAPI Step1 failed status=${res.status} request_id=${requestId ?? "n/a"} url=${url} message=${message}`
+    );
+    throw new Error(message);
   }
 
   return (await res.json()) as Step1PlantResponse;
@@ -97,13 +103,19 @@ async function _callFastApiStep2(params: {
   }
   fd.append("files", params.file, params.file.name);
 
-  const res = await fetch(`${FASTAPI_URL}/api/step2/disease`, {
+  const url = `${FASTAPI_URL}/api/step2/disease`;
+  const res = await fetch(url, {
     method: "POST",
     body: fd,
   });
 
   if (!res.ok) {
-    throw new Error(await _readFastApiError(res));
+    const message = await _readFastApiError(res);
+    const requestId = res.headers.get("x-request-id");
+    console.error(
+      `[Diagnosis] FastAPI Step2 failed status=${res.status} request_id=${requestId ?? "n/a"} url=${url} message=${message}`
+    );
+    throw new Error(message);
   }
 
   return (await res.json()) as Step2DiseaseResponse;

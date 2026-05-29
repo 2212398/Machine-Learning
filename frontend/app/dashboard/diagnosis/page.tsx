@@ -27,7 +27,22 @@ function formatFileSize(size: number) {
 }
 
 function friendlyError(message: string) {
-  const lower = message.toLowerCase();
+  const trimmed = message.trim();
+  if (!trimmed) {
+    return vi.diagnosis.errors.generic;
+  }
+
+  // If the backend already returned a user-facing Vietnamese message, keep it.
+  // This helps debugging production issues (models missing, storage failures, etc.)
+  // without collapsing everything into a generic toast.
+  const hasVietnameseDiacritics = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(
+    trimmed
+  );
+  if (hasVietnameseDiacritics || trimmed.toLowerCase().includes("vui lòng")) {
+    return trimmed;
+  }
+
+  const lower = trimmed.toLowerCase();
 
   if (lower.includes("network") || lower.includes("fetch") || lower.includes("server") || lower.includes("fastapi")) {
     return vi.diagnosis.errors.serverDown;
