@@ -21,8 +21,9 @@ from uuid import uuid4
 import cv2
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import (
@@ -34,7 +35,9 @@ from .config import (
     DISEASE_MODEL_PATH,
     DISEASE_LABELS_PATH,
     DISEASE_THRESHOLD,
+    ENABLE_API_DOCS,
     ENABLE_LEGACY_PREDICT_ENDPOINT,
+    FEEDBACK_AGGREGATOR_ENABLED,
     FRONTEND_DIR,
     INDEX_FILE,
     INFERENCE_MAX_CONCURRENCY,
@@ -71,7 +74,10 @@ from .inference import PlantDiseasePredictor
 from .preprocess import extract_leaf_region, extract_leaf_region_with_stats
 from .recommendations import RecommendationEngine
 from .schemas import (
+    ApiErrorResponse,
+    HealthResponse,
     PredictResponse,
+    RecommendationResponse,
     Step1PlantResponse,
     Step2DiseaseResponse,
     Step2ImageResult,
@@ -97,9 +103,91 @@ else:
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 JPEG_MAGIC = b"\xff\xd8"
+ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png"}
+ALLOWED_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
+READ_CHUNK_BYTES = 1024 * 1024
+MULTIPART_OVERHEAD_BYTES = 1024 * 1024
 
 
-app = FastAPI(title="Plant Leaf Detection API", version="2.0.0")
+error_responses = {
+    400: {"model": ApiErrorResponse},
+    401: {"model": ApiErrorResponse},
+    403: {"model": ApiErrorResponse},
+    413: {"model": ApiErrorResponse},
+    422: {"model": ApiErrorResponse},
+    429: {"model": ApiErrorResponse},
+    500: {"model": ApiErrorResponse},
+    503: {"model": ApiErrorResponse},
+}
+
+
+app = FastAPI(
+    title="Plant Leaf Detection API",
+    version="2.0.0",
+    docs_url="/docs" if ENABLE_API_DOCS else None,
+    redoc_url="/redoc" if ENABLE_API_DOCS else None,
+    openapi_url="/openapi.json" if ENABLE_API_DOCS else None,
+)
+
+
+def _request_id(request: Request) -> str:
+    return request.headers.get("x-request-id") or uuid4().hex
+
+
+def _error_payload(*, request: Request, status_code: int, message: str, error: str) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "error",
+            "error": error,
+            "message": message,
+            "request_id": getattr(request.state, "request_id", None),
+        },
+    )
+
+
+def _api_error(status_code: int, message: str, error: str = "http_error") -> HTTPException:
+    return HTTPException(status_code=status_code, detail=message, headers={"x-error-code": error})
+
+
+@app.middleware("http")
+async def add_request_context(request: Request, call_next):
+    request.state.request_id = _request_id(request)
+    response = await call_next(request)
+    response.headers["x-request-id"] = request.state.request_id
+    return response
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    detail = exc.detail if isinstance(exc.detail, str) else json.dumps(exc.detail, ensure_ascii=False)
+    return _error_payload(
+        request=request,
+        status_code=exc.status_code,
+        message=detail,
+        error=getattr(exc, "headers", None).get("x-error-code", "http_error") if exc.headers else "http_error",
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return _error_payload(
+        request=request,
+        status_code=422,
+        message="Dữ liệu gửi lên không hợp lệ.",
+        error="validation_error",
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    LOGGER.exception("Unhandled API error request_id=%s", getattr(request.state, "request_id", None))
+    return _error_payload(
+        request=request,
+        status_code=500,
+        message="Lỗi hệ thống. Vui lòng thử lại sau.",
+        error="internal_server_error",
+    )
 
 
 # Background feedback aggregation (periodically export feedbacks for retraining)
@@ -184,7 +272,11 @@ def _start_feedback_aggregator(interval_sec: int = 60 * 60):
 
 @app.on_event("startup")
 def _maybe_start_aggregator():
-    # start aggregator with 1 hour interval by default
+    if not FEEDBACK_AGGREGATOR_ENABLED:
+        LOGGER.info("Feedback aggregator disabled: FEEDBACK_AGGREGATOR_ENABLED is not set")
+        return
+
+    # Start aggregator with 1 hour interval by default only when retraining export is explicit.
     try:
         _start_feedback_aggregator(interval_sec=int(os.getenv("FEEDBACK_AGGREGATOR_INTERVAL", 60 * 60)))
     except Exception:
@@ -237,7 +329,7 @@ def index():
     raise HTTPException(status_code=404, detail="Frontend index file not found")
 
 
-@app.get("/api/health")
+@app.get("/api/health", response_model=HealthResponse, responses=error_responses)
 def health():
     return {
         "status": "ok",
@@ -258,14 +350,14 @@ def health():
         "image_blur_variance_threshold": IMAGE_BLUR_VARIANCE_THRESHOLD,
         "step2_strict_plant_match": STEP2_STRICT_PLANT_MATCH,
         "upload_archive_enabled": UPLOAD_ARCHIVE_ENABLED,
-        "upload_archive_dir": str(UPLOAD_ARCHIVE_DIR),
+        "upload_archive_dir": "configured" if UPLOAD_ARCHIVE_ENABLED else "disabled",  # Avoid leaking server filesystem paths.
         "upload_max_image_mb": round(UPLOAD_MAX_IMAGE_BYTES / (1024 * 1024), 2),
         "step2_max_files": STEP2_MAX_FILES,
         "step2_max_total_mb": round(STEP2_MAX_TOTAL_BYTES / (1024 * 1024), 2),
     }
 
 
-@app.get("/api/recommendation")
+@app.get("/api/recommendation", response_model=RecommendationResponse, responses=error_responses)
 def get_recommendation(disease_label: str, plant_label: str):
     """Return a short recommendation summary and checklist for a diagnosis.
 
@@ -329,6 +421,7 @@ def _maybe_cleanup_rate_limit_buckets(now: float) -> None:
 
 
 def _enforce_rate_limit(request: Request, endpoint: str) -> None:
+    # Per-endpoint sliding window keyed by client IP; protects CPU-heavy AI routes from bursts.
     now = time.time()
     ip = _client_ip_from_request(request)
     key = f"{endpoint}|{ip}"
@@ -341,12 +434,13 @@ def _enforce_rate_limit(request: Request, endpoint: str) -> None:
             bucket.popleft()
 
         if len(bucket) >= int(RATE_LIMIT_MAX_REQUESTS):
-            raise HTTPException(
-                status_code=429,
-                detail=(
+            raise _api_error(
+                429,
+                (
                     f"Quá nhiều yêu cầu. Hãy thử lại sau {RATE_LIMIT_WINDOW_SEC}s "
                     f"(giới hạn {RATE_LIMIT_MAX_REQUESTS} req/{RATE_LIMIT_WINDOW_SEC}s)."
                 ),
+                "rate_limited",
             )
 
         bucket.append(now)
@@ -392,43 +486,44 @@ def _issue_step2_access_token(*, request: Request, allowed_plants: list[str]) ->
 
 def _verify_step2_access_token(*, token: str | None, request: Request) -> dict[str, Any]:
     if not token:
-        raise HTTPException(status_code=401, detail="Thiếu token hợp lệ cho Bước 2. Hãy chạy Bước 1 lại.")
+        raise _api_error(401, "Thiếu token hợp lệ cho Bước 2. Hãy chạy Bước 1 lại.", "missing_step2_token")
 
     parts = token.split(".")
     if len(parts) != 2:
-        raise HTTPException(status_code=401, detail="Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.")
+        raise _api_error(401, "Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.", "invalid_step2_token")
 
     try:
         payload_bytes = _b64url_decode(parts[0])
         sig_bytes = _b64url_decode(parts[1])
     except Exception:
-        raise HTTPException(status_code=401, detail="Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.")
+        raise _api_error(401, "Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.", "invalid_step2_token")
 
+    # HMAC signature prevents users from widening the allowed plant list client-side.
     expected_sig = _sign_step2_token_payload(payload_bytes)
     if not hmac.compare_digest(expected_sig, sig_bytes):
-        raise HTTPException(status_code=401, detail="Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.")
+        raise _api_error(401, "Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.", "invalid_step2_token")
 
     try:
         payload = json.loads(payload_bytes.decode("utf-8"))
     except Exception:
-        raise HTTPException(status_code=401, detail="Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.")
+        raise _api_error(401, "Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.", "invalid_step2_token")
 
     if not isinstance(payload, dict):
-        raise HTTPException(status_code=401, detail="Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.")
+        raise _api_error(401, "Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.", "invalid_step2_token")
 
     exp = int(payload.get("exp") or 0)
     if exp <= int(time.time()):
-        raise HTTPException(status_code=401, detail="Token Bước 2 đã hết hạn. Hãy chạy Bước 1 lại.")
+        raise _api_error(401, "Token Bước 2 đã hết hạn. Hãy chạy Bước 1 lại.", "expired_step2_token")
 
     if STEP2_FLOW_TOKEN_BIND_IP:
         token_ip = str(payload.get("ip") or "")
         req_ip = _client_ip_from_request(request)
         if token_ip and token_ip != req_ip:
-            raise HTTPException(status_code=403, detail="Token Bước 2 không khớp IP. Hãy chạy Bước 1 lại.")
+            raise _api_error(403, "Token Bước 2 không khớp IP. Hãy chạy Bước 1 lại.", "step2_token_ip_mismatch")
 
     allowed_plants = payload.get("allowed_plants")
     if not isinstance(allowed_plants, list) or not all(isinstance(x, str) for x in allowed_plants):
-        raise HTTPException(status_code=401, detail="Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.")
+        raise _api_error(401, "Token Bước 2 không hợp lệ. Hãy chạy Bước 1 lại.", "invalid_step2_token")
 
     return payload
 
@@ -438,11 +533,37 @@ def _is_probably_image_bytes(raw_bytes: bytes) -> bool:
         return True
     if raw_bytes.startswith(PNG_MAGIC):
         return True
-    if raw_bytes.startswith(b"BM"):
-        return True
-    if len(raw_bytes) >= 12 and raw_bytes[0:4] == b"RIFF" and raw_bytes[8:12] == b"WEBP":
-        return True
     return False
+
+
+def _enforce_request_content_length(request: Request, max_bytes: int) -> None:
+    raw_length = request.headers.get("content-length")
+    if not raw_length:
+        return
+
+    try:
+        content_length = int(raw_length)
+    except ValueError:
+        raise _api_error(400, "Header Content-Length không hợp lệ.", "invalid_content_length")
+
+    if content_length > max_bytes:
+        raise _api_error(
+            413,
+            f"Dung lượng request vượt giới hạn {_to_mb_text(max_bytes)}.",
+            "request_too_large",
+        )
+
+
+def _enforce_upload_metadata(file: UploadFile) -> None:
+    # MIME + extension checks fail fast before reading the whole body into memory.
+    content_type = (file.content_type or "").lower()
+    suffix = Path(file.filename or "").suffix.lower()
+
+    if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+        raise _api_error(400, "Chỉ chấp nhận ảnh JPG/JPEG hoặc PNG.", "invalid_file_type")
+
+    if suffix and suffix not in ALLOWED_IMAGE_SUFFIXES:
+        raise _api_error(400, "Phần mở rộng file không hợp lệ. Chỉ nhận .jpg, .jpeg, .png.", "invalid_file_extension")
 
 
 def _try_parse_image_size(raw_bytes: bytes) -> tuple[int | None, int | None]:
@@ -525,15 +646,16 @@ def _try_parse_image_size(raw_bytes: bytes) -> tuple[int | None, int | None]:
 
 def _enforce_image_limits(width: int, height: int) -> None:
     if width <= 0 or height <= 0:
-        raise HTTPException(status_code=400, detail="Không xác định được kích thước ảnh hợp lệ.")
+        raise _api_error(400, "Không xác định được kích thước ảnh hợp lệ.", "invalid_image_dimensions")
 
     if width > MAX_IMAGE_WIDTH or height > MAX_IMAGE_HEIGHT or (width * height) > MAX_IMAGE_PIXELS:
-        raise HTTPException(
-            status_code=413,
-            detail=(
+        raise _api_error(
+            413,
+            (
                 "Ảnh quá lớn. "
                 f"Giới hạn {MAX_IMAGE_WIDTH}x{MAX_IMAGE_HEIGHT} và {MAX_IMAGE_PIXELS} pixels." 
             ),
+            "image_dimensions_too_large",
         )
 
 
@@ -679,28 +801,29 @@ async def _read_upload_bytes_with_limit(file: UploadFile) -> bytes:
     chunks: list[bytes] = []
 
     while True:
-        chunk = await file.read(1024 * 1024)
+        chunk = await file.read(READ_CHUNK_BYTES)
         if not chunk:
             break
 
         total_bytes += len(chunk)
         if total_bytes > UPLOAD_MAX_IMAGE_BYTES:
-            raise HTTPException(
-                status_code=413,
-                detail=f"Kích thước ảnh vượt giới hạn {_to_mb_text(UPLOAD_MAX_IMAGE_BYTES)}.",
+            raise _api_error(
+                413,
+                f"Kích thước ảnh vượt giới hạn {_to_mb_text(UPLOAD_MAX_IMAGE_BYTES)}.",
+                "file_too_large",
             )
 
         chunks.append(chunk)
 
     if total_bytes <= 0:
-        raise HTTPException(status_code=400, detail="File ảnh rỗng.")
+        raise _api_error(400, "File ảnh rỗng.", "empty_file")
 
     return b"".join(chunks)
 
 
 def _decode_image_bytes(raw_bytes: bytes) -> np.ndarray:
     if not _is_probably_image_bytes(raw_bytes):
-        raise HTTPException(status_code=400, detail="File tải lên không đúng định dạng ảnh hợp lệ.")
+        raise _api_error(400, "File tải lên không đúng định dạng ảnh JPG/PNG hợp lệ.", "invalid_image_magic")
 
     parsed_w, parsed_h = _try_parse_image_size(raw_bytes)
     if parsed_w is not None and parsed_h is not None:
@@ -727,7 +850,7 @@ def _decode_image_bytes(raw_bytes: bytes) -> np.ndarray:
         image = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
     if image is None:
-        raise HTTPException(status_code=400, detail="Không đọc được ảnh. Vui lòng thử lại.")
+        raise _api_error(400, "Không đọc được ảnh. Vui lòng thử lại.", "image_decode_failed")
 
     height, width = image.shape[:2]
     _enforce_image_limits(width, height)
@@ -747,18 +870,18 @@ def _enforce_not_blurry(image: np.ndarray) -> None:
 
     blur_score = _laplacian_variance(image)
     if blur_score < threshold:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Anh qua mo de chan doan tin cay. "
-                f"Hay chup lai ro hon (blur_score={blur_score:.1f}, threshold={threshold:.1f})."
+        raise _api_error(
+            422,
+            (
+                "Ảnh quá mờ để chẩn đoán tin cậy. "
+                f"Hãy chụp lại rõ hơn (blur_score={blur_score:.1f}, threshold={threshold:.1f})."
             ),
+            "image_too_blurry",
         )
 
 
 async def _decode_upload_image(file: UploadFile, flow: str, endpoint: str) -> tuple[np.ndarray, bytes]:
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Chỉ chấp nhận file ảnh (JPG/PNG)")
+    _enforce_upload_metadata(file)
 
     raw_bytes = await _read_upload_bytes_with_limit(file)
     try:
@@ -904,12 +1027,14 @@ def _run_step2_single_image(*, raw_bytes: bytes, resolved_plant: str) -> dict[st
     }
 
 
-@app.post("/api/step1/plant", response_model=Step1PlantResponse)
+@app.post("/api/step1/plant", response_model=Step1PlantResponse, responses=error_responses)
 async def step1_plant(request: Request, file: UploadFile = File(...)):
     endpoint = "/api/step1/plant"
     _enforce_rate_limit(request, endpoint)
+    _enforce_request_content_length(request, UPLOAD_MAX_IMAGE_BYTES + MULTIPART_OVERHEAD_BYTES)
     image, raw_bytes = await _decode_upload_image(file, flow="step1", endpoint=endpoint)
 
+    # AI inference is CPU/GPU heavy; a semaphore keeps concurrent requests bounded.
     async with INFERENCE_SEMAPHORE:
         processed_image, leaf_found, leaf_stats = await asyncio.to_thread(extract_leaf_region_with_stats, image)
     if not leaf_found:
@@ -926,7 +1051,7 @@ async def step1_plant(request: Request, file: UploadFile = File(...)):
                 "model_predicted": False,
             },
         )
-        raise HTTPException(status_code=422, detail="Không phát hiện được lá cây. Hãy chụp rõ hơn.")
+        raise _api_error(422, "Không phát hiện được lá cây. Hãy chụp rõ hơn.", "leaf_not_found")
 
     leaf_candidate_count = int(leaf_stats.get("leaf_candidate_count", 0))
     dominant_leaf_ratio = float(leaf_stats.get("largest_leaf_ratio", 0.0))
@@ -1050,7 +1175,7 @@ async def step1_plant(request: Request, file: UploadFile = File(...)):
     return response
 
 
-@app.post("/api/step2/disease", response_model=Step2DiseaseResponse)
+@app.post("/api/step2/disease", response_model=Step2DiseaseResponse, responses=error_responses)
 async def step2_disease(
     request: Request,
     confirmed_plant_label: str = Form(...),
@@ -1062,6 +1187,7 @@ async def step2_disease(
     request_id = uuid4().hex
 
     _enforce_rate_limit(request, endpoint)
+    _enforce_request_content_length(request, STEP2_MAX_TOTAL_BYTES + MULTIPART_OVERHEAD_BYTES)
 
     allowed_plants_from_token: list[str] = []
     if REQUIRE_STEP2_FLOW_TOKEN:
@@ -1069,29 +1195,23 @@ async def step2_disease(
         allowed_plants_from_token = [str(x) for x in payload.get("allowed_plants", []) if isinstance(x, str)]
 
     if not plant_confirmed:
-        raise HTTPException(status_code=400, detail="Cần xác nhận loại cây ở Bước 1 trước khi chạy Bước 2.")
+        raise _api_error(400, "Cần xác nhận loại cây ở Bước 1 trước khi chạy Bước 2.", "plant_not_confirmed")
 
     if not files:
-        raise HTTPException(status_code=400, detail="Bước 2 cần ít nhất 1 ảnh.")
+        raise _api_error(400, "Bước 2 cần ít nhất 1 ảnh.", "missing_step2_files")
 
     if len(files) > STEP2_MAX_FILES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Bước 2 chỉ nhận tối đa {STEP2_MAX_FILES} ảnh cho mỗi lần gửi.",
-        )
+        raise _api_error(400, f"Bước 2 chỉ nhận tối đa {STEP2_MAX_FILES} ảnh cho mỗi lần gửi.", "too_many_step2_files")
 
     resolved_plant = predictor.resolve_plant_label(confirmed_plant_label)
     if resolved_plant is None or resolved_plant == "unknown_plant":
-        raise HTTPException(status_code=400, detail="Loại cây đã xác nhận không hợp lệ. Hãy chạy Bước 1 lại.")
+        raise _api_error(400, "Loại cây đã xác nhận không hợp lệ. Hãy chạy Bước 1 lại.", "invalid_confirmed_plant")
 
     if REQUIRE_STEP2_FLOW_TOKEN and resolved_plant not in allowed_plants_from_token:
-        raise HTTPException(
-            status_code=403,
-            detail="Loại cây Bước 2 không khớp với kết quả Bước 1. Hãy chạy Bước 1 lại.",
-        )
+        raise _api_error(403, "Loại cây Bước 2 không khớp với kết quả Bước 1. Hãy chạy Bước 1 lại.", "step2_plant_not_allowed")
 
     if predictor.disease_model is None:
-        raise HTTPException(status_code=500, detail="Chưa tải được model bước 2 (disease model).")
+        raise _api_error(503, "Chưa tải được model bước 2 (disease model).", "model_unavailable")
 
     per_image_results: list[Step2ImageResult] = []
     score_by_label: dict[str, float] = {}
@@ -1109,13 +1229,15 @@ async def step2_disease(
     for upload in files:
         filename = upload.filename or "unknown"
 
-        if not upload.content_type or not upload.content_type.startswith("image/"):
+        try:
+            _enforce_upload_metadata(upload)
+        except HTTPException as exc:
             per_image_results.append(
                 Step2ImageResult(
                     image_name=filename,
                     leaf_detected=False,
                     status="invalid_file",
-                    message="File không phải ảnh JPG/PNG",
+                    message=str(exc.detail),
                     disease_label=f"{resolved_plant}___unknown_disease",
                     disease_confidence=0.0,
                     inconsistent=False,
@@ -1160,12 +1282,13 @@ async def step2_disease(
                     "request_id": request_id,
                 },
             )
-            raise HTTPException(
-                status_code=413,
-                detail=(
+            raise _api_error(
+                413,
+                (
                     f"Tổng dung lượng ảnh Bước 2 vượt giới hạn {_to_mb_text(STEP2_MAX_TOTAL_BYTES)} "
                     "cho mỗi lần gửi."
                 ),
+                "step2_total_too_large",
             )
 
         file_hash = hashlib.sha256(raw_bytes).hexdigest()
@@ -1402,15 +1525,17 @@ async def step2_disease(
     )
 
 
-@app.post("/api/predict", response_model=PredictResponse)
+@app.post("/api/predict", response_model=PredictResponse, responses=error_responses)
 async def predict(request: Request, file: UploadFile = File(...)):
     endpoint = "/api/predict"
     if not ENABLE_LEGACY_PREDICT_ENDPOINT:
-        raise HTTPException(status_code=404, detail="Endpoint /api/predict đã bị tắt. Hãy dùng flow 2 bước.")
+        raise _api_error(404, "Endpoint /api/predict đã bị tắt. Hãy dùng flow 2 bước.", "legacy_endpoint_disabled")
 
     _enforce_rate_limit(request, endpoint)
+    _enforce_request_content_length(request, UPLOAD_MAX_IMAGE_BYTES + MULTIPART_OVERHEAD_BYTES)
     image, raw_bytes = await _decode_upload_image(file, flow="predict", endpoint=endpoint)
 
+    # Legacy AI path is kept bounded by the same semaphore as the two-step flow.
     async with INFERENCE_SEMAPHORE:
         processed_image, leaf_found = await asyncio.to_thread(extract_leaf_region, image)
     if not leaf_found:
@@ -1427,7 +1552,7 @@ async def predict(request: Request, file: UploadFile = File(...)):
                 "model_predicted": False,
             },
         )
-        raise HTTPException(status_code=422, detail="Không phát hiện được lá cây. Hãy chụp rõ hơn.")
+        raise _api_error(422, "Không phát hiện được lá cây. Hãy chụp rõ hơn.", "leaf_not_found")
 
     async with INFERENCE_SEMAPHORE:
         pred = await asyncio.to_thread(predictor.predict, processed_image)

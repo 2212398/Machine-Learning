@@ -1,6 +1,38 @@
 from pydantic import BaseModel, Field
 
 
+class ApiErrorResponse(BaseModel):
+    status: str = "error"
+    error: str
+    message: str
+    request_id: str | None = None
+
+
+class HealthResponse(BaseModel):
+    status: str
+    model_loaded: bool
+    plant_model_loaded: bool
+    disease_model_loaded: bool
+    device: str
+    legacy_predict_enabled: bool
+    require_step2_flow_token: bool
+    step2_token_ttl_sec: int
+    step2_token_bind_ip: bool
+    inference_max_concurrency: int
+    rate_limit_window_sec: int
+    rate_limit_max_requests: int
+    max_image_width: int
+    max_image_height: int
+    max_image_pixels: int
+    image_blur_variance_threshold: float
+    step2_strict_plant_match: bool
+    upload_archive_enabled: bool
+    upload_archive_dir: str
+    upload_max_image_mb: float
+    step2_max_files: int
+    step2_max_total_mb: float
+
+
 class RecommendationChecklist(BaseModel):
     immediate: list[str] = Field(default_factory=list)
     monitor: list[str] = Field(default_factory=list)
@@ -15,6 +47,12 @@ class RecommendationDetail(BaseModel):
     phong_ngua: list[str] = Field(default_factory=list)
     muc_do: str = "unknown"
     thoi_gian_xu_ly: str = ""
+
+
+class RecommendationResponse(BaseModel):
+    summary: str
+    recommendation: RecommendationDetail | str
+    checklist: RecommendationChecklist | None = None
 
 
 class DiseaseCandidate(BaseModel):

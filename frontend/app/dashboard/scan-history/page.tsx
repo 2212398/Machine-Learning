@@ -7,13 +7,12 @@ export default async function ScanHistoryPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-3xl font-semibold text-neutral-900">Lich su kham cay</h1>
+        <h1 className="font-display text-3xl font-semibold text-neutral-900">Lịch sử chẩn đoán</h1>
         <p className="mt-2 text-sm text-neutral-600">
-          Moi ban ghi chi hien thi voi dung nguoi so huu nho Row Level Security tren Supabase.
+          Mỗi bản ghi chỉ hiển thị với đúng người sở hữu nhờ Row Level Security trên Supabase.
         </p>
       </div>
       <ScanHistoryCrud initialRows={rows} />
     </div>
   );
 }
-

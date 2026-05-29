@@ -26,8 +26,8 @@ export const en = {
     recommendation: "Treatment recommendation",
     healthyRecommendation: "The plant looks healthy. Keep current care practices.",
     noRecommendation: "No suitable recommendation is available for this result.",
-    invalidType: "Invalid format. JPG, PNG, or WebP only.",
-    tooLarge: "Image is too large. Please choose a file up to 10MB.",
+    invalidType: "Định dạng không hợp lệ. Chỉ hỗ trợ JPG hoặc PNG.",
+    tooLarge: "Ảnh quá lớn. Vui lòng chọn file tối đa 5MB.",
   },
   severity: {
     healthy: "Healthy",

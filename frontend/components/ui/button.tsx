@@ -44,7 +44,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     "bg-primary text-white shadow-sm hover:bg-primary-light active:bg-[#24543f] disabled:hover:bg-primary",
   outline:
-    "border-2 border-primary bg-transparent text-primary hover:bg-primary/10 active:bg-primary/15",
+    "border border-primary/35 bg-white text-primary shadow-sm hover:border-primary hover:bg-primary/10 active:bg-primary/15",
   ghost: "bg-transparent text-neutral-700 hover:bg-neutral-100 active:bg-neutral-100/80",
   danger: "bg-danger text-white shadow-sm hover:bg-danger/90 active:bg-danger/80",
   secondary:
@@ -92,6 +92,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     const isDisabled = disabled || loading;
     const classes = cn(
       "inline-flex min-w-[44px] items-center justify-center gap-2 font-semibold transition-all duration-150 ease-in-out",
+      "active:scale-[0.98]",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
       "disabled:cursor-not-allowed disabled:opacity-60",
       loading && "cursor-not-allowed opacity-75",

@@ -113,28 +113,29 @@ Required environment variables for the frontend/backend compose run:
 - `DOMAIN` or a direct HTTPS `NEXT_PUBLIC_FASTAPI_URL`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `FEEDBACK_AGGREGATOR_ENABLED=1` only when scheduled retraining CSV exports are intended.
 
 Nginx serves the app on ports 80/443, redirects HTTP to HTTPS, proxies `/api/` to the FastAPI backend, and proxies everything else to Next.js. Replace the placeholder certificate path in `nginx/default.conf` with your real domain before production use.
 
-The backend mounts the model, labels, upload archive, and retraining export folders so the container can reuse local assets without rebuilding the image every time.
+The backend mounts the model, labels, optional upload archive, and retraining export folders so the container can reuse local assets without rebuilding the image every time.
 
 ## Upload Limits + Datalake Archive
 
-The API applies upload safety limits and stores user uploads in a datalake-style archive for later dataset improvement.
+The API applies upload safety limits. Raw upload archiving is opt-in for retraining workflows.
 
 Default limits:
 
-- Max image size: 8 MB per image
+- Max image size: 5 MB per image
 - Step 2 max files: 6 images per request
 - Step 2 max total size: 24 MB per request
 
-Default archive folder:
+Default archive folder when `UPLOAD_ARCHIVE_ENABLED=1`:
 
 - `backend/app/upload_archive`
 
 Datalake behavior:
 
-- Raw image is stored for each accepted upload.
+- Raw image is stored for each accepted upload only when archiving is enabled.
 - A sidecar JSON metadata file is stored with timestamp, endpoint, and prediction.
 - Images are grouped into scope buckets for retraining workflows:
   - `in_scope`
@@ -145,6 +146,8 @@ Datalake behavior:
 Environment variables:
 
 - `UPLOAD_ARCHIVE_ENABLED` (`1` or `0`)
+- `FEEDBACK_AGGREGATOR_ENABLED` (`1` or `0`)
+- `ENABLE_API_DOCS` (`1` for local API docs, `0` in production)
 - `UPLOAD_ARCHIVE_DIR`
 - `UPLOAD_MAX_IMAGE_BYTES`
 - `STEP2_MAX_FILES`

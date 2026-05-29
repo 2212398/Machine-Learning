@@ -35,6 +35,7 @@ alter table public.scan_history enable row level security;
 
 grant select, insert, update, delete on public.scan_history to authenticated;
 
+-- RLS is enforced inside Postgres, so direct API calls cannot read or mutate another user's rows.
 drop policy if exists "Scan history can read own rows" on public.scan_history;
 create policy "Scan history can read own rows"
 on public.scan_history
@@ -63,4 +64,3 @@ on public.scan_history
 for delete
 to authenticated
 using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
-

@@ -27,13 +27,13 @@ describe("UploadZone", () => {
     expect(screen.getByAltText(/preview leaf.jpg/i)).toBeInTheDocument();
   });
 
-  it("shows an error when the file is larger than 10MB", () => {
+  it("shows an error when the file is larger than 5MB", () => {
     const { container } = render(<UploadZone onFileSelect={vi.fn()} />);
-    const file = new File([new Uint8Array(11 * 1024 * 1024)], "large.jpg", { type: "image/jpeg" });
+    const file = new File([new Uint8Array(6 * 1024 * 1024)], "large.jpg", { type: "image/jpeg" });
 
     fireEvent.change(getFileInput(container), { target: { files: [file] } });
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/10MB/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(/5MB/i);
   });
 
   it("shows an error when the file is not an accepted image", () => {
@@ -42,6 +42,6 @@ describe("UploadZone", () => {
 
     fireEvent.change(getFileInput(container), { target: { files: [file] } });
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/JPG, PNG/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(/JPG.*PNG/i);
   });
 });

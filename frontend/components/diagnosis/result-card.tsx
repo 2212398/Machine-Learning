@@ -233,7 +233,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
           monitor: Array.isArray(nextChecklist?.monitor) ? nextChecklist.monitor : [],
           consult: Array.isArray(nextChecklist?.consult) ? nextChecklist.consult : [],
         });
-      } catch (e) {
+      } catch {
         // ignore failures, recommendations are optional
         setRecommendation(null);
         setChecklist({ immediate: [], monitor: [], consult: [] });
@@ -263,7 +263,7 @@ export function DiagnosisResultCard({ result, onBack }: DiagnosisResultProps) {
         <div>
           <img
             src={result.image_url}
-            alt="Diagnosis"
+            alt="Ảnh chẩn đoán"
             className="w-full max-w-md h-auto rounded-xl border border-border"
           />
         </div>

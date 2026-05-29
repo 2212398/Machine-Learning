@@ -35,8 +35,8 @@ services:
         NEXT_PUBLIC_FASTAPI_URL: http://backend:8000
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     container_name: plantleaf_frontend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000" # Keep production traffic behind nginx; local compose override can publish this port.
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1

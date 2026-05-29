@@ -72,6 +72,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 NEXT_PUBLIC_FASTAPI_URL=https://your-domain.com/api
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+FEEDBACK_AGGREGATOR_ENABLED=0
+UPLOAD_ARCHIVE_ENABLED=0
 DEVICE=cpu
 ALLOWED_ORIGINS=https://your-domain.com
 EOF

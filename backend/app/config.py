@@ -52,9 +52,11 @@ PLANT_GATE_MARGIN = float(os.getenv("PLANT_GATE_MARGIN", "0.12"))
 STEP1_MAX_LEAF_CANDIDATES = int(os.getenv("STEP1_MAX_LEAF_CANDIDATES", "2"))
 STEP1_MIN_DOMINANT_LEAF_RATIO = float(os.getenv("STEP1_MIN_DOMINANT_LEAF_RATIO", "0.12"))
 
-UPLOAD_ARCHIVE_ENABLED = _to_bool(os.getenv("UPLOAD_ARCHIVE_ENABLED", "1"), default=True)
+UPLOAD_ARCHIVE_ENABLED = _to_bool(os.getenv("UPLOAD_ARCHIVE_ENABLED", "0"), default=False)  # Raw upload retention must be explicit.
 UPLOAD_ARCHIVE_DIR = Path(os.getenv("UPLOAD_ARCHIVE_DIR", BASE_DIR / "upload_archive"))
-UPLOAD_MAX_IMAGE_BYTES = max(256 * 1024, int(os.getenv("UPLOAD_MAX_IMAGE_BYTES", str(8 * 1024 * 1024))))
+FEEDBACK_AGGREGATOR_ENABLED = _to_bool(os.getenv("FEEDBACK_AGGREGATOR_ENABLED", "0"), default=False)  # Service-role exports must be opt-in.
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+UPLOAD_MAX_IMAGE_BYTES = max(256 * 1024, int(os.getenv("UPLOAD_MAX_IMAGE_BYTES", str(MAX_IMAGE_BYTES))))  # CHANGED: default per-file limit is 5MB.
 STEP2_MAX_FILES = max(1, int(os.getenv("STEP2_MAX_FILES", "6")))
 STEP2_MAX_TOTAL_BYTES = max(
     UPLOAD_MAX_IMAGE_BYTES,
@@ -65,6 +67,8 @@ FRONTEND_DIR = PROJECT_DIR / "frontend"
 INDEX_FILE = FRONTEND_DIR / "index.html"
 
 # --- Security / Hardening knobs ---
+
+ENABLE_API_DOCS = _to_bool(os.getenv("ENABLE_API_DOCS", "0"), default=False)  # Public API docs are opt-in.
 
 # CORS
 ALLOWED_ORIGINS = _to_csv_list(os.getenv("ALLOWED_ORIGINS", ""))

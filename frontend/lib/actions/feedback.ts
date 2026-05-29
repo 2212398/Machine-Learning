@@ -2,6 +2,19 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+const MAX_FEEDBACK_NOTE_LENGTH = 500;
+
+function normalizeFeedbackNote(note?: string): { note: string | null; error?: string } {
+  const normalized = note?.trim() ?? "";
+
+  if (normalized.length > MAX_FEEDBACK_NOTE_LENGTH) {
+    // Bound server-action input because clients can bypass UI-level validation.
+    return { note: null, error: "Ghi chú không được vượt quá 500 ký tự." };
+  }
+
+  return { note: normalized || null };
+}
+
 export async function recordFeedback(
   diagnosisId: string,
   isCorrect: boolean,
@@ -28,6 +41,11 @@ export async function recordFeedback(
       return { success: false, error: "Không tìm thấy chẩn đoán" };
     }
 
+    const normalizedNote = normalizeFeedbackNote(note);
+    if (normalizedNote.error) {
+      return { success: false, error: normalizedNote.error };
+    }
+
     // Record feedback
     const { error: feedbackError } = await supabase
       .from("feedbacks")
@@ -35,7 +53,7 @@ export async function recordFeedback(
         diagnosis_id: diagnosisId,
         user_id: user.id,
         is_correct: isCorrect,
-        note: note || null,
+        note: normalizedNote.note,
       } as any);
 
     if (feedbackError) {
@@ -43,7 +61,6 @@ export async function recordFeedback(
       return { success: false, error: "Lỗi khi lưu phản hồi" };
     }
 
-    console.log("[Feedback] Recorded:", diagnosisId, isCorrect);
     return { success: true };
   } catch (error) {
     console.error("[Feedback] Unexpected error:", error);

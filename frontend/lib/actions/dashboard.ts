@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createSignedImageUrl } from "@/lib/actions/diagnosis";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   ActivityPoint,
@@ -44,7 +45,7 @@ function getDiagnosisSeverity(diseaseName: string, confidence: number): Diagnosi
   return confidence >= 0.8 ? "severe" : "mild";
 }
 
-function mapDiagnosis(row: DiagnosisRow): DiagnosisHistoryItem {
+async function mapDiagnosis(row: DiagnosisRow): Promise<DiagnosisHistoryItem> {
   const diseaseName = row.disease_label || "Unknown disease";
   const confidence = row.disease_confidence ?? 0;
 
@@ -54,7 +55,8 @@ function mapDiagnosis(row: DiagnosisRow): DiagnosisHistoryItem {
     plantName: row.plant_label || "Unknown plant",
     diseaseName,
     severity: getDiagnosisSeverity(diseaseName, confidence),
-    imageUrl: row.image_url || undefined,
+    // CHANGED: diagnoses.image_url now stores a private Storage path; sign it before rendering history.
+    imageUrl: (await createSignedImageUrl(row.image_url)) || undefined,
     confidence,
     note: row.note,
   };
@@ -138,7 +140,7 @@ export async function getDiagnoses(
   const hasMore = ((data as DiagnosisRow[] | null) ?? []).length > limit;
 
   return {
-    items: rows.map(mapDiagnosis),
+    items: await Promise.all(rows.map(mapDiagnosis)),
     nextCursor: rows.at(-1)?.created_at ?? null,
     hasMore,
   };

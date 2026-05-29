@@ -8,7 +8,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Plant Disease Diagnosis",
+  title: "Plant Detec",
   description: "Ứng dụng AI chẩn đoán bệnh cây từ ảnh lá cây.",
 };
 

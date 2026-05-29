@@ -18,7 +18,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
   const [step1, setStep1] = useState<Step1PlantResponse | null>(null);
   const [selectedPlant, setSelectedPlant] = useState<string>("");
   const [selectedPlantConfidence, setSelectedPlantConfidence] = useState<number>(0);
-  const maxUploadBytes = 10 * 1024 * 1024;
+  const maxUploadBytes = 5 * 1024 * 1024; // Keep legacy form validation aligned with backend and storage limits.
 
   const resetFlowState = () => {
     setStep1(null);
@@ -37,12 +37,12 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
 
   const readSelectedImage = (selectedFile: File) => {
     if (!selectedFile.type.startsWith("image/")) {
-      setError("Chi ho tro file anh (JPEG, PNG, WebP, etc.)");
+      setError("Chỉ hỗ trợ ảnh JPEG hoặc PNG");
       return;
     }
 
     if (selectedFile.size > maxUploadBytes) {
-      setError("Anh qua lon (toi da 10MB)");
+      setError("Ảnh quá lớn (tối đa 5MB)");
       return;
     }
 
@@ -188,7 +188,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
                   Kéo thả ảnh lá cây, hoặc click để chọn file
                 </p>
                 <p className="mt-1 text-sm sm:text-xs text-muted-foreground">
-                  Hỗ trợ: JPEG, PNG, WebP
+                  Hỗ trợ: JPEG, PNG
                 </p>
               </div>
             )}

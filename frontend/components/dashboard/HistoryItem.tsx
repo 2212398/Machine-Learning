@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Pencil, StickyNote, Trash2 } from "lucide-react";
+import { CalendarDays, ImageOff, Loader2, Pencil, StickyNote, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,9 +85,15 @@ export function HistoryItem({ item, onDeleted, onUpdated }: HistoryItemProps) {
   }
 
   return (
-    <article className="group flex gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:border-primary/20 hover:shadow-md">
-      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-primary-pale">
-        {item.imageUrl ? <img alt="" className="h-full w-full object-cover" src={item.imageUrl} /> : null}
+    <article className="group flex gap-4 rounded-xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:border-primary/20 hover:shadow-md">
+      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-primary-pale">
+        {item.imageUrl ? (
+          <img alt="" className="h-full w-full object-cover" src={item.imageUrl} />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-primary">
+            <ImageOff className="h-5 w-5" />
+          </div>
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -123,10 +129,14 @@ export function HistoryItem({ item, onDeleted, onUpdated }: HistoryItemProps) {
         </div>
 
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-500">
-          <span>{new Date(item.createdAt).toLocaleDateString("vi-VN")}</span>
+          <span className="inline-flex items-center gap-1">
+            <CalendarDays className="h-4 w-4" />
+            {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+          </span>
           <Badge size="sm" variant={isHealthy(item) ? "healthy" : "severe"}>
             {isHealthy(item) ? "Khỏe" : "Bệnh"}
           </Badge>
+          <span className="font-semibold text-primary">{Math.round(item.confidence * 100)}%</span>
         </div>
 
         {item.note ? (

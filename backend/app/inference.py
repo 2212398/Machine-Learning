@@ -100,6 +100,15 @@ class PlantDiseasePredictor:
             model = models.mobilenet_v3_large(weights=None)
         elif backbone == "efficientnet_b4":
             model = models.efficientnet_b4(weights=None)
+            in_features = model.classifier[-1].in_features
+            model.classifier = nn.Sequential(
+                nn.Dropout(p=0.4),
+                nn.Linear(in_features, 512),
+                nn.SiLU(),
+                nn.Dropout(p=0.3),
+                nn.Linear(512, num_classes),
+            )
+            return model
         else:
             raise ValueError(f"Unsupported backbone: {backbone}")
 
@@ -132,8 +141,11 @@ class PlantDiseasePredictor:
             return None
 
         # Prefer loading checkpoints/state-dicts first (more common for this project).
+        # Windows/PyTorch can fail to fopen paths containing Vietnamese characters;
+        # opening the file in Python keeps Unicode path handling on Python's side.
         try:
-            loaded_obj = torch.load(str(model_path), map_location=self.device)
+            with model_path.open("rb") as model_file:
+                loaded_obj = torch.load(model_file, map_location=self.device)
 
             if isinstance(loaded_obj, nn.Module):
                 loaded_obj.to(self.device)
@@ -160,7 +172,8 @@ class PlantDiseasePredictor:
 
         # As a fallback, try loading a TorchScript archive (may emit missing constants warnings).
         try:
-            model = torch.jit.load(str(model_path), map_location=self.device)
+            with model_path.open("rb") as model_file:
+                model = torch.jit.load(model_file, map_location=self.device)
             model.eval()
             LOGGER.info("Loaded TorchScript %s model from %s", model_name, model_path)
             return model

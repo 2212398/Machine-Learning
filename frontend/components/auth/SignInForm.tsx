@@ -57,6 +57,10 @@ export function SignInForm() {
   const onSubmit = async (values: SignInValues) => {
     setFormError(null);
     const supabase = createSupabaseBrowserClient();
+
+    // Clear stale browser-only auth state before creating a fresh password session.
+    await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+
     const { error } = await supabase.auth.signInWithPassword(values);
 
     if (error) {
@@ -64,7 +68,7 @@ export function SignInForm() {
       return;
     }
 
-    router.push("/dashboard");
+    router.replace("/dashboard");
     router.refresh();
   };
 

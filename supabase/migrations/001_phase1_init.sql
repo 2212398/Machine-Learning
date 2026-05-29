@@ -1,4 +1,6 @@
 create extension if not exists pgcrypto;
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -68,6 +70,27 @@ create trigger set_profiles_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
 
+create or replace function private.prevent_profile_role_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.role is distinct from old.role and coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'Không được thay đổi vai trò tài khoản.';
+  end if;
+  return new;
+end;
+$$;
+
+revoke execute on function private.prevent_profile_role_change() from public, anon, authenticated;
+
+drop trigger if exists prevent_profiles_role_change on public.profiles;
+create trigger prevent_profiles_role_change
+before update of role on public.profiles
+for each row execute function private.prevent_profile_role_change();
+
 drop trigger if exists set_diagnoses_updated_at on public.diagnoses;
 create trigger set_diagnoses_updated_at
 before update on public.diagnoses
@@ -83,7 +106,7 @@ create trigger set_feedbacks_updated_at
 before update on public.feedbacks
 for each row execute function public.set_updated_at();
 
-create or replace function public.handle_new_user()
+create or replace function private.handle_new_user()
 returns trigger
 language plpgsql
 security definer
@@ -104,10 +127,14 @@ begin
 end;
 $$;
 
+-- Keep the security definer auth hook outside exposed schemas and callable only by the trigger.
+revoke execute on function private.handle_new_user() from public, anon, authenticated;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
-for each row execute function public.handle_new_user();
+for each row execute function private.handle_new_user();
+drop function if exists public.handle_new_user();
 
 alter table public.profiles enable row level security;
 alter table public.diagnoses enable row level security;
@@ -131,7 +158,7 @@ drop policy if exists "Profiles can insert own row" on public.profiles;
 create policy "Profiles can insert own row"
 on public.profiles
 for insert
-with check (auth.uid() = id);
+with check (auth.uid() = id and role = 'user');
 
 drop policy if exists "Diagnoses can read own rows" on public.diagnoses;
 create policy "Diagnoses can read own rows"

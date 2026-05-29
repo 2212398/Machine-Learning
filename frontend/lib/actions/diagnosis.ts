@@ -4,33 +4,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { DiagnosisResult, DiseaseCandidate, RecommendationDetail, Step1PlantResponse, Step2DiseaseResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 
-// Narrow DB row types for safer supabase typings
-type DiagnosisRow = {
-  id: string;
-  user_id: string;
-  plant_label: string;
-  plant_confidence: number;
-  disease_label: string;
-  disease_confidence: number;
-  status: string;
-  image_url: string;
-  model_version?: string;
-  created_at: string;
-};
-
-type DiagnosisImageRow = {
-  diagnosis_id: string;
-  user_id: string;
-  storage_path: string;
-  image_url: string;
-  plant_label: string;
-  disease_label: string;
-  plant_confidence: number;
-  disease_confidence: number;
-  analysis_status: string;
-};
-
 const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || "http://localhost:8000";
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // CHANGED: keep frontend/server/backend upload limit at 5MB.
+const SIGNED_IMAGE_URL_TTL_SECONDS = 60 * 60;
 
 function _toNumber(value: unknown, fallback = 0): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -41,17 +17,55 @@ function _clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
+function _validateUploadSize(file: File): string | null {
+  return file.size > MAX_UPLOAD_BYTES ? "Ảnh quá lớn (tối đa 5MB)" : null;
+}
+
 function _sanitizeStorageName(name: string): string {
   const trimmed = String(name || "upload.jpg").trim();
   const safe = trimmed.replace(/[\\/]+/g, "_");
   return safe.length > 120 ? safe.slice(-120) : safe;
 }
 
-async function _fileToDataUrl(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const base64 = Buffer.from(arrayBuffer).toString("base64");
-  const mimeType = file.type || "image/jpeg";
-  return `data:${mimeType};base64,${base64}`;
+async function _readFastApiError(res: Response): Promise<string> {
+  const fallback = `Máy chủ chẩn đoán trả về lỗi (${res.status}).`;
+
+  try {
+    const payload = (await res.json()) as { message?: unknown; detail?: unknown };
+    // Only surface the user-facing message; keep request IDs and backend codes out of UI.
+    return typeof payload.message === "string"
+      ? payload.message
+      : typeof payload.detail === "string"
+        ? payload.detail
+        : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function createSignedImageUrl(storagePath: string | null | undefined): Promise<string | null> {
+  const path = storagePath?.trim();
+
+  if (!path) {
+    return null;
+  }
+
+  // Legacy rows may contain URLs, but only image data URLs are safe to render directly.
+  if (/^https?:/i.test(path) || /^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(path)) {
+    return path;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.storage
+    .from("leaf-uploads")
+    .createSignedUrl(path, SIGNED_IMAGE_URL_TTL_SECONDS);
+
+  if (error) {
+    console.warn("[Diagnosis] Signed URL error:", error);
+    return null;
+  }
+
+  return data.signedUrl;
 }
 
 async function _callFastApiStep1(file: File): Promise<Step1PlantResponse> {
@@ -64,9 +78,7 @@ async function _callFastApiStep1(file: File): Promise<Step1PlantResponse> {
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    const detail = text || `FastAPI lỗi (${res.status})`;
-    throw new Error(detail);
+    throw new Error(await _readFastApiError(res));
   }
 
   return (await res.json()) as Step1PlantResponse;
@@ -91,9 +103,7 @@ async function _callFastApiStep2(params: {
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    const detail = text || `FastAPI lỗi (${res.status})`;
-    throw new Error(detail);
+    throw new Error(await _readFastApiError(res));
   }
 
   return (await res.json()) as Step2DiseaseResponse;
@@ -119,18 +129,17 @@ async function _persistDiagnosis(params: {
     "0"
   )}/${String(timestamp.getDate()).padStart(2, "0")}/${Date.now()}-${safeName}`;
 
-  let imageUrl = "";
+  let imagePath = "";
   try {
     const { error: uploadError } = await supabase.storage.from("leaf-uploads").upload(storagePath, params.file as any);
     if (uploadError) {
       throw uploadError;
     }
 
-    const { data: publicUrlData } = supabase.storage.from("leaf-uploads").getPublicUrl(storagePath);
-    imageUrl = publicUrlData.publicUrl;
+    imagePath = storagePath; // CHANGED: persist private Storage path, never a public URL.
   } catch (storageError) {
-    console.warn("[Diagnosis] Storage error (non-critical):", storageError);
-    imageUrl = await _fileToDataUrl(params.file);
+    console.error("[Diagnosis] Storage error:", storageError);
+    return { error: "Lỗi khi lưu ảnh lên kho riêng tư. Vui lòng thử lại." };
   }
 
   const recommendationForDb =
@@ -149,14 +158,19 @@ async function _persistDiagnosis(params: {
       disease_confidence: params.diseaseConfidence,
       status: params.status || "completed",
       recommendation: recommendationForDb,
-      image_url: imageUrl,
-      model_version: "mobilenetv3-two-step",
+      image_url: imagePath, // CHANGED: DB stores path; UI resolves a signed URL when displaying.
+      model_version: "efficientnet-b4-two-step",
     } as Database["public"]["Tables"]["diagnoses"]["Insert"])
     .select()
     .single();
 
   if (dbError || !diagnosis) {
     console.error("[Diagnosis] Database error:", dbError);
+    // Clean up the just-uploaded private object so failed DB writes do not leave orphaned files.
+    const { error: cleanupError } = await supabase.storage.from("leaf-uploads").remove([storagePath]);
+    if (cleanupError) {
+      console.warn("[Diagnosis] Storage cleanup warning:", cleanupError);
+    }
     return {
       error: `Lỗi khi lưu kết quả: ${dbError?.message ?? "unknown"}`,
     };
@@ -168,7 +182,7 @@ async function _persistDiagnosis(params: {
     diagnosis_id: diagnosisRow.id,
     user_id: params.userId,
     storage_path: storagePath,
-    image_url: imageUrl,
+    image_url: imagePath, // CHANGED: keep diagnosis_images consistent with private Storage path.
     plant_label: diagnosisRow.plant_label ?? null,
     disease_label: diagnosisRow.disease_label ?? null,
     plant_confidence: diagnosisRow.plant_confidence ?? null,
@@ -189,7 +203,7 @@ async function _persistDiagnosis(params: {
       disease_confidence: diagnosisRow.disease_confidence ?? 0,
       disease_top_candidates: params.diseaseTopCandidates ?? [],
       recommendation: params.recommendation ?? null,
-      image_url: diagnosisRow.image_url ?? "",
+      image_url: (await createSignedImageUrl(diagnosisRow.image_url)) ?? "",
       created_at: diagnosisRow.created_at,
     },
   };
@@ -212,10 +226,10 @@ export async function uploadAndDiagnose(
       return { error: "Không tìm thấy file ảnh" };
     }
 
-    // Validate file size (max 10MB)
-    const MAX_SIZE = 10 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      return { error: "Ảnh quá lớn (tối đa 10MB)" };
+    // CHANGED: Validate file size with the same 5MB limit as UI and FastAPI.
+    const sizeError = _validateUploadSize(file);
+    if (sizeError) {
+      return { error: sizeError };
     }
 
     // Step 1: plant classification (may require user confirmation)
@@ -307,6 +321,12 @@ export async function confirmAndDiagnose(
     const file = formData.get("file") as File;
     if (!file) {
       return { error: "Không tìm thấy file ảnh" };
+    }
+
+    // CHANGED: keep direct Step2 server action calls on the same 5MB limit.
+    const sizeError = _validateUploadSize(file);
+    if (sizeError) {
+      return { error: sizeError };
     }
 
     const confirmedPlantLabel = String(formData.get("confirmed_plant_label") || "").trim();

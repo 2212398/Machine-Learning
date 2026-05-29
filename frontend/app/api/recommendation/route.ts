@@ -7,7 +7,7 @@ export async function GET(request: Request) {
 
   if (!diseaseLabel || !plantLabel) {
     return Response.json(
-      { detail: "Missing disease_label or plant_label" },
+      { detail: "Thiếu tên cây hoặc tên bệnh." },
       { status: 400 }
     );
   }
@@ -26,8 +26,10 @@ export async function GET(request: Request) {
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
+      // Keep backend details in server logs; do not expose internals to the browser.
+      console.error("[Recommendation] Backend error:", { status: res.status, detail: text.slice(0, 500) });
       return Response.json(
-        { detail: text || `FastAPI error (${res.status})` },
+        { detail: "Không thể tải khuyến nghị. Vui lòng thử lại." },
         { status: res.status }
       );
     }
@@ -35,12 +37,11 @@ export async function GET(request: Request) {
     const data = await res.json();
     return Response.json(data, { status: 200 });
   } catch (err) {
+    // Network errors may contain internal hostnames, so return a stable Vietnamese message.
+    console.error("[Recommendation] Request failed:", err);
     return Response.json(
       {
-        detail:
-          err instanceof Error
-            ? err.message
-            : "Could not reach backend for recommendation",
+        detail: "Không thể kết nối máy chủ khuyến nghị.",
       },
       { status: 502 }
     );

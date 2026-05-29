@@ -13,8 +13,8 @@
 These values are safe for frontend/runtime setup:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://wlykrwemsoifvtakmniw.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndseWtyd2Vtc29pZnZ0YWttbml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5ODk3MDAsImV4cCI6MjA5NDU2NTcwMH0.ycByi0MJ1SBHyBysJTEA5sELnixuj1qe0EHPUy0T4W8
+NEXT_PUBLIC_SUPABASE_URL=<provided privately>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<provided privately>
 NEXT_PUBLIC_FASTAPI_URL=http://backend:8000
 NEXT_PUBLIC_APP_URL=https://plantdetec.duckdns.org
 ```

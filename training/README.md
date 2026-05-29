@@ -21,6 +21,7 @@ Quick steps:
 
 Notes:
 - The exporter uses the Supabase REST API and requires a service-role key. Keep that key secret.
+- Scheduled backend exports are disabled by default; set `FEEDBACK_AGGREGATOR_ENABLED=1` only when you intentionally want hourly retraining CSV snapshots.
 - The exporter falls back to `diagnoses` to populate the retraining snapshot fields, so it works even if `feedbacks` does not yet have those extra columns.
 # Training Scripts
 

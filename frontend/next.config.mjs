@@ -5,6 +5,10 @@ const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
   outputFileTracingRoot: process.cwd(),
+  experimental: {
+    // Next DevTools Segment Explorer can desync the RSC client manifest in webpack dev mode on this setup.
+    devtoolSegmentExplorer: false,
+  },
 };
 
 export default withSentryConfig(nextConfig, {
