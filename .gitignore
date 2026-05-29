@@ -11,6 +11,10 @@ env/
 # Tool caches
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage/
 
 # Local training exports
 training/exports/
@@ -33,6 +37,19 @@ backend/app/upload_archive/manifests/
 Thumbs.db
 .DS_Store
 *.log
+*.tmp
+
+# Build outputs and dependencies
+node_modules/
+.next/
+dist/
+build/
+out/
+bin/
+debug/
+Debug/
+Release/
+.turbo/
 
 # Frontend build / deps
 frontend/node_modules/
@@ -40,6 +57,8 @@ frontend/.next/
 frontend/.env.local
 frontend/.cache/
 frontend/tsconfig.tsbuildinfo
+frontend/playwright-report/
+frontend/test-results/
 
 # General local env
 .env
